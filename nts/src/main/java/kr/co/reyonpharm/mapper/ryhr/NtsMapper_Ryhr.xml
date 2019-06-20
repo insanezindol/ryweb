@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.NtsMapper_Ryhr">
+	
+	<select id="selectUserInfo" parameterType="NtsInfo" resultType="NtsInfo">
+		SELECT /* selectUserInfo */
+			SABUN,
+			JUMIN
+		FROM
+			(SELECT 
+				SABUN,
+				EDP_DATE,
+				SYSTEM.DECRYPT(JUMIN_ONE,'r!E#Y%on321') || SYSTEM.DECRYPT(JUMIN_TWO,'r!E#Y%on321') JUMIN
+			FROM RYHR.RYHZZ01MT)
+		WHERE 1=1
+			AND JUMIN = #{jumin}
+			AND EDP_DATE = (SELECT MAX(EDP_DATE) FROM RYHR.RYHZZ01MT WHERE SYSTEM.DECRYPT(JUMIN_ONE,'r!E#Y%on321') || SYSTEM.DECRYPT(JUMIN_TWO,'r!E#Y%on321') = #{jumin})
+	</select>
+	
+	<select id="selectExistInfo" parameterType="NtsInfo" resultType="NtsInfo">
+		SELECT /* selectExistInfo */
+			COUNT(1) EXIST_CNT
+		FROM
+			RYHR.RYHPA30IT
+		WHERE 1=1
+			AND YYMM = #{yymm}
+			AND PAY_GB = #{payGb}
+			AND SABUN = #{sabun}
+	</select>
+	
+	<delete id="deleteExistInfo" parameterType="NtsInfo">
+		DELETE /* deleteExistInfo */
+		FROM RYHR.RYHPA30IT
+		WHERE YYMM = #{yymm}
+			AND PAY_GB = #{payGb}
+			AND SABUN = #{sabun}
+	</delete>
+	
+	<insert id="insertNtsInfo" parameterType="NtsInfo">
+		INSERT /* insertNtsInfo */
+		INTO RYHR.RYHPA30IT (
+			YYMM,
+			PAY_GB,
+			SABUN,
+			ITEM_CD,
+			ITEM_DATA,
+			EDP_EMP_NO,
+			EDP_DATE,
+			ORDER_SEQ
+		) VALUES (
+			#{yymm},
+			#{payGb},
+			#{sabun},
+			( SELECT ITEM_CD FROM RYHR.ryhpa07mt WHERE 1=1 AND USE_GBN = 'Y' AND YYMM = #{yymm} AND XML_ELEMENT = #{itemKey} <if test="gbn != null and gbn != ''">AND GBN = #{gbn}</if> ),
+			#{itemData},
+			'SYSTEM',
+			SYSDATE,
+			#{orderSeq}
+		)
+	</insert>
+	
+</mapper>
