@@ -1,0 +1,877 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.MeetingMapper_Ryhr">
+	
+	<sql id="selectMeetingListWhere">
+		<if test="saupCode != null and saupCode != ''">
+			AND t1.SAUP_CODE = #{saupCode}
+		</if>
+		<if test="meetingType != null and meetingType != ''">
+			AND t1.MEETING_TYPE = #{meetingType}
+		</if>
+		<if test="deptCodeList != null">
+			AND ( t1.DEPT_CODE IN
+			<foreach collection="deptCodeList" item="item" index="index" separator="," open="(" close=")">
+			#{item}
+			</foreach>
+			<foreach collection="attSabunList" item="item" index="index" separator="OR" open="OR" >
+			t1.REG_SABUN = #{item} OR t2.ATTENDANT_SABUN LIKE '%'||#{item}||'%'
+			</foreach>
+			)
+		</if>
+		<if test="sabunList != null">
+			<foreach collection="sabunList" item="item" index="index" separator="OR" open="AND (" close=")">
+			t1.REG_SABUN = #{item} OR t2.ATTENDANT_SABUN LIKE '%'||#{item}||'%'
+			</foreach>
+		</if>
+		<if test="s_meetingName != null and s_meetingName != ''">
+			AND t1.MEETING_NAME LIKE '%'||#{s_meetingName}||'%'
+		</if>
+		<if test="s_deptCode != null and s_deptCode != ''">
+			AND t1.DEPT_CODE = #{s_deptCode}
+		</if>
+		<if test="s_regName != null and s_regName != ''">
+			AND t1.REG_NAME = #{s_regName}
+		</if>
+		<if test="(startDate != null and startDate != '') and (endDate != null and endDate != '')">
+			AND (t1.MEETING_START_DATE <![CDATA[>=]]> TO_DATE(#{startDate},'YYYY-MM-DD HH24:MI') AND t1.MEETING_END_DATE <![CDATA[<=]]> TO_DATE(#{endDate},'YYYY-MM-DD HH24:MI') )
+		</if>
+		<if test="s_meetingPlace != null and s_meetingPlace != ''">
+			AND t1.MEETING_PLACE = #{s_meetingPlace}
+		</if>
+		<if test="s_status != null and s_status != ''">
+			<choose>
+				<when test="s_status == 'ZZ'">
+			AND t1.MEETING_STATUS IN ('01' , '05')
+				</when>
+				<when test="s_status == 'YY'">
+			AND t1.MEETING_STATUS IN ('02' , '03' , '04' , '99')
+				</when>
+				<otherwise>
+			AND t1.MEETING_STATUS = #{s_status}
+				</otherwise>
+			</choose>
+		</if>
+		<if test="s_visitCompany != null and s_visitCompany != ''">
+			AND t1.VISIT_COMPANY LIKE '%'||#{s_visitCompany}||'%'
+		</if>
+		<if test="s_visitName != null and s_visitName != ''">
+			AND t1.VISIT_NAME LIKE '%'||#{s_visitName}||'%'
+		</if>
+	</sql>
+	
+	<select id="selectMeetingListCount" parameterType="PageParam" resultType="int">
+		SELECT /* selectMeetingListCount */
+		    COUNT(1)
+		  FROM (
+		    SELECT
+				t1.MEETING_SEQ,
+                t1.PROJECT_SEQ,
+                t1.MEETING_NAME,
+                t1.MEETING_START_DATE,
+                t1.MEETING_END_DATE,
+                t1.MEETING_PLACE,
+                t1.MEETING_TYPE,
+                t1.MEETING_STATUS,
+                t1.SAUP_CODE,
+                t1.DEPT_CODE,
+                t1.DEPT_NAME,
+                t1.REG_SABUN,
+                t1.REG_NAME,
+                t1.MEETING_REG_DATE,
+                t1.MEETING_UPD_DATE,
+                t1.VISIT_COMPANY,
+                t1.VISIT_NAME,
+                t1.MEETING_CONTENTS,
+                t1.DECISION_CONTENTS,
+                t1.PLAN_CONTENTS,
+                t1.ISSUE_CONTENTS,
+                t1.ATTACH_FILEPATH1,
+                t1.ATTACH_FILENAME1,
+                t1.ATTACH_FILESIZE1,
+                t1.ATTACH_FILEPATH2,
+                t1.ATTACH_FILENAME2,
+                t1.ATTACH_FILESIZE2,
+                t1.ATTACH_FILEPATH3,
+                t1.ATTACH_FILENAME3,
+                t1.ATTACH_FILESIZE3,
+                t1.ATTACH_FILEPATH4,
+                t1.ATTACH_FILENAME4,
+                t1.ATTACH_FILESIZE4,
+                t1.ATTACH_FILEPATH5,
+                t1.ATTACH_FILENAME5,
+                t1.ATTACH_FILESIZE5,
+                t1.MEETING_RESULT_REG_DATE,
+                t1.MEETING_RESULT_UPD_DATE,
+                t1.SACTION_SABUN,
+                t1.SACTION_NAME,
+                t1.SACTION_DATE,
+                t1.SACTION_COMMENT,
+                t1.CONFIRM_SABUN,
+                t1.CONFIRM_NAME,
+                t1.CONFIRM_DATE,
+                t1.CONFIRM_COMMENT,
+                t1.RETURN_SABUN,
+                t1.RETURN_NAME,
+                t1.RETURN_DATE,
+                t1.RETURN_COMMENT,
+                SUBSTR(XMLAGG(XMLELEMENT(A,',' || t2.ATTENDANT_SABUN) ORDER BY t2.ATTENDANT_SABUN).EXTRACT('//text()'), 2) AS ATTENDANT_SABUN
+			FROM RYHR.RYHCF02MT t1 LEFT OUTER JOIN RYHR.RYHCF03MT t2
+            ON t1.MEETING_SEQ = t2.MEETING_SEQ AND t2.ATTENDANT_TYPE IN ('01', '02')
+			WHERE 1=1
+				<include refid="selectMeetingListWhere" />
+			GROUP BY
+				t1.MEETING_SEQ,
+                t1.PROJECT_SEQ,
+                t1.MEETING_NAME,
+                t1.MEETING_START_DATE,
+                t1.MEETING_END_DATE,
+                t1.MEETING_PLACE,
+                t1.MEETING_TYPE,
+                t1.MEETING_STATUS,
+                t1.SAUP_CODE,
+                t1.DEPT_CODE,
+                t1.DEPT_NAME,
+                t1.REG_SABUN,
+                t1.REG_NAME,
+                t1.MEETING_REG_DATE,
+                t1.MEETING_UPD_DATE,
+                t1.VISIT_COMPANY,
+                t1.VISIT_NAME,
+                t1.MEETING_CONTENTS,
+                t1.DECISION_CONTENTS,
+                t1.PLAN_CONTENTS,
+                t1.ISSUE_CONTENTS,
+                t1.ATTACH_FILEPATH1,
+                t1.ATTACH_FILENAME1,
+                t1.ATTACH_FILESIZE1,
+                t1.ATTACH_FILEPATH2,
+                t1.ATTACH_FILENAME2,
+                t1.ATTACH_FILESIZE2,
+                t1.ATTACH_FILEPATH3,
+                t1.ATTACH_FILENAME3,
+                t1.ATTACH_FILESIZE3,
+                t1.ATTACH_FILEPATH4,
+                t1.ATTACH_FILENAME4,
+                t1.ATTACH_FILESIZE4,
+                t1.ATTACH_FILEPATH5,
+                t1.ATTACH_FILENAME5,
+                t1.ATTACH_FILESIZE5,
+                t1.MEETING_RESULT_REG_DATE,
+                t1.MEETING_RESULT_UPD_DATE,
+                t1.SACTION_SABUN,
+                t1.SACTION_NAME,
+                t1.SACTION_DATE,
+                t1.SACTION_COMMENT,
+                t1.CONFIRM_SABUN,
+                t1.CONFIRM_NAME,
+                t1.CONFIRM_DATE,
+                t1.CONFIRM_COMMENT,
+                t1.RETURN_SABUN,
+                t1.RETURN_NAME,
+                t1.RETURN_DATE,
+                t1.RETURN_COMMENT
+		  ) a
+	</select>
+	
+	<select id="selectMeetingList" parameterType="PageParam" resultType="MeetingInfo">
+		SELECT /* selectMeetingList */
+			b.RNUM,
+			b.MEETING_SEQ,
+			b.PROJECT_SEQ,
+			b.MEETING_NAME,
+			TO_CHAR(b.MEETING_START_DATE, 'YYYY-MM-DD HH24:MI') MEETING_START_DATE,
+			TO_CHAR(b.MEETING_END_DATE, 'YYYY-MM-DD HH24:MI') MEETING_END_DATE,
+			b.MEETING_PLACE,
+			b.MEETING_TYPE,
+			b.MEETING_STATUS,
+			b.SAUP_CODE,
+			b.DEPT_CODE,
+			b.DEPT_NAME,
+			b.REG_SABUN,
+			b.REG_NAME,
+			TO_CHAR(b.MEETING_REG_DATE, 'YYYY-MM-DD HH24:MI') MEETING_REG_DATE,
+			TO_CHAR(b.MEETING_UPD_DATE, 'YYYY-MM-DD HH24:MI') MEETING_UPD_DATE,
+			b.VISIT_COMPANY,
+			b.VISIT_NAME,
+			b.MEETING_CONTENTS,
+			b.DECISION_CONTENTS,
+			b.PLAN_CONTENTS,
+			b.ISSUE_CONTENTS,
+			b.ATTACH_FILEPATH1,
+            b.ATTACH_FILENAME1,
+            b.ATTACH_FILESIZE1,
+            b.ATTACH_FILEPATH2,
+            b.ATTACH_FILENAME2,
+            b.ATTACH_FILESIZE2,
+            b.ATTACH_FILEPATH3,
+            b.ATTACH_FILENAME3,
+            b.ATTACH_FILESIZE3,
+            b.ATTACH_FILEPATH4,
+            b.ATTACH_FILENAME4,
+            b.ATTACH_FILESIZE4,
+            b.ATTACH_FILEPATH5,
+            b.ATTACH_FILENAME5,
+            b.ATTACH_FILESIZE5,
+			TO_CHAR(b.MEETING_RESULT_REG_DATE, 'YYYY-MM-DD HH24:MI') MEETING_RESULT_REG_DATE,
+			TO_CHAR(b.MEETING_RESULT_UPD_DATE, 'YYYY-MM-DD HH24:MI') MEETING_RESULT_UPD_DATE,
+			b.CONFIRM_SABUN,
+			b.CONFIRM_NAME,
+			TO_CHAR(b.CONFIRM_DATE, 'YYYY-MM-DD HH24:MI') CONFIRM_DATE,
+			c.CODE_NAME
+		FROM (
+		  SELECT
+		    ROWNUM RNUM,
+		    a.*
+		  FROM (
+		    SELECT
+				t1.MEETING_SEQ,
+                t1.PROJECT_SEQ,
+                t1.MEETING_NAME,
+                t1.MEETING_START_DATE,
+                t1.MEETING_END_DATE,
+                t1.MEETING_PLACE,
+                t1.MEETING_TYPE,
+                t1.MEETING_STATUS,
+                t1.SAUP_CODE,
+                t1.DEPT_CODE,
+                t1.DEPT_NAME,
+                t1.REG_SABUN,
+                t1.REG_NAME,
+                t1.MEETING_REG_DATE,
+                t1.MEETING_UPD_DATE,
+                t1.VISIT_COMPANY,
+                t1.VISIT_NAME,
+                t1.MEETING_CONTENTS,
+                t1.DECISION_CONTENTS,
+                t1.PLAN_CONTENTS,
+                t1.ISSUE_CONTENTS,
+                t1.ATTACH_FILEPATH1,
+                t1.ATTACH_FILENAME1,
+                t1.ATTACH_FILESIZE1,
+                t1.ATTACH_FILEPATH2,
+                t1.ATTACH_FILENAME2,
+                t1.ATTACH_FILESIZE2,
+                t1.ATTACH_FILEPATH3,
+                t1.ATTACH_FILENAME3,
+                t1.ATTACH_FILESIZE3,
+                t1.ATTACH_FILEPATH4,
+                t1.ATTACH_FILENAME4,
+                t1.ATTACH_FILESIZE4,
+                t1.ATTACH_FILEPATH5,
+                t1.ATTACH_FILENAME5,
+                t1.ATTACH_FILESIZE5,
+                t1.MEETING_RESULT_REG_DATE,
+                t1.MEETING_RESULT_UPD_DATE,
+                t1.SACTION_SABUN,
+                t1.SACTION_NAME,
+                t1.SACTION_DATE,
+                t1.SACTION_COMMENT,
+                t1.CONFIRM_SABUN,
+                t1.CONFIRM_NAME,
+                t1.CONFIRM_DATE,
+                t1.CONFIRM_COMMENT,
+                t1.RETURN_SABUN,
+                t1.RETURN_NAME,
+                t1.RETURN_DATE,
+                t1.RETURN_COMMENT,
+                SUBSTR(XMLAGG(XMLELEMENT(A,',' || t2.ATTENDANT_SABUN) ORDER BY t2.ATTENDANT_SABUN).EXTRACT('//text()'), 2) AS ATTENDANT_SABUN
+			FROM RYHR.RYHCF02MT t1 LEFT OUTER JOIN RYHR.RYHCF03MT t2
+            ON t1.MEETING_SEQ = t2.MEETING_SEQ AND t2.ATTENDANT_TYPE IN ('01', '02')
+			WHERE 1=1
+				<include refid="selectMeetingListWhere" />
+			GROUP BY
+				t1.MEETING_SEQ,
+                t1.PROJECT_SEQ,
+                t1.MEETING_NAME,
+                t1.MEETING_START_DATE,
+                t1.MEETING_END_DATE,
+                t1.MEETING_PLACE,
+                t1.MEETING_TYPE,
+                t1.MEETING_STATUS,
+                t1.SAUP_CODE,
+                t1.DEPT_CODE,
+                t1.DEPT_NAME,
+                t1.REG_SABUN,
+                t1.REG_NAME,
+                t1.MEETING_REG_DATE,
+                t1.MEETING_UPD_DATE,
+                t1.VISIT_COMPANY,
+                t1.VISIT_NAME,
+                t1.MEETING_CONTENTS,
+                t1.DECISION_CONTENTS,
+                t1.PLAN_CONTENTS,
+                t1.ISSUE_CONTENTS,
+                t1.ATTACH_FILEPATH1,
+                t1.ATTACH_FILENAME1,
+                t1.ATTACH_FILESIZE1,
+                t1.ATTACH_FILEPATH2,
+                t1.ATTACH_FILENAME2,
+                t1.ATTACH_FILESIZE2,
+                t1.ATTACH_FILEPATH3,
+                t1.ATTACH_FILENAME3,
+                t1.ATTACH_FILESIZE3,
+                t1.ATTACH_FILEPATH4,
+                t1.ATTACH_FILENAME4,
+                t1.ATTACH_FILESIZE4,
+                t1.ATTACH_FILEPATH5,
+                t1.ATTACH_FILENAME5,
+                t1.ATTACH_FILESIZE5,
+                t1.MEETING_RESULT_REG_DATE,
+                t1.MEETING_RESULT_UPD_DATE,
+                t1.SACTION_SABUN,
+                t1.SACTION_NAME,
+                t1.SACTION_DATE,
+                t1.SACTION_COMMENT,
+                t1.CONFIRM_SABUN,
+                t1.CONFIRM_NAME,
+                t1.CONFIRM_DATE,
+                t1.CONFIRM_COMMENT,
+                t1.RETURN_SABUN,
+                t1.RETURN_NAME,
+                t1.RETURN_DATE,
+                t1.RETURN_COMMENT
+			ORDER BY t1.MEETING_START_DATE DESC
+		  ) a
+		) b, RYHR.RYHCD10MT c
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+		AND c.GRP_CODE = 'AG' AND b.MEETING_PLACE = c.CODE
+	</select>
+	
+	<select id="selectMeeting" parameterType="MeetingInfo" resultType="MeetingInfo">
+		SELECT /* selectMeeting */
+		    t2.MEETING_SEQ,
+		    t2.PROJECT_SEQ,
+		    NVL(t1.PROJECT_NAME, '해당없음') PROJECT_NAME,
+		    t2.MEETING_NAME,
+		    TO_CHAR(t2.MEETING_START_DATE, 'YYYY-MM-DD HH24:MI') MEETING_START_DATE,
+		    TO_CHAR(t2.MEETING_END_DATE, 'YYYY-MM-DD HH24:MI') MEETING_END_DATE,
+		    t2.MEETING_PLACE,
+		    t2.MEETING_TYPE,
+		    t2.MEETING_STATUS,
+		    t2.SAUP_CODE,
+		    t2.DEPT_CODE,
+		    t2.DEPT_NAME,
+		    t2.REG_SABUN,
+		    t2.REG_NAME,
+		    TO_CHAR(t2.MEETING_REG_DATE, 'YYYY-MM-DD HH24:MI:SS') MEETING_REG_DATE,
+		    t2.UPD_SABUN,
+		    t2.UPD_NAME,
+		    TO_CHAR(t2.MEETING_UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') MEETING_UPD_DATE,
+		    t2.VISIT_COMPANY,
+		    t2.VISIT_NAME,
+		    t2.MEETING_CONTENTS,
+		    t2.DECISION_CONTENTS,
+		    t2.PLAN_CONTENTS,
+		    t2.ISSUE_CONTENTS,
+		    t2.ATTACH_FILEPATH1,
+            t2.ATTACH_FILENAME1,
+            t2.ATTACH_FILESIZE1,
+            t2.ATTACH_FILEPATH2,
+            t2.ATTACH_FILENAME2,
+            t2.ATTACH_FILESIZE2,
+            t2.ATTACH_FILEPATH3,
+            t2.ATTACH_FILENAME3,
+            t2.ATTACH_FILESIZE3,
+            t2.ATTACH_FILEPATH4,
+            t2.ATTACH_FILENAME4,
+            t2.ATTACH_FILESIZE4,
+            t2.ATTACH_FILEPATH5,
+            t2.ATTACH_FILENAME5,
+            t2.ATTACH_FILESIZE5,
+		    TO_CHAR(t2.MEETING_RESULT_REG_DATE, 'YYYY-MM-DD HH24:MI:SS') MEETING_RESULT_REG_DATE,
+		    TO_CHAR(t2.MEETING_RESULT_UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') MEETING_RESULT_UPD_DATE,
+			t2.SACTION_SABUN,
+			t2.SACTION_NAME,
+			TO_CHAR(t2.SACTION_DATE, 'YYYY-MM-DD HH24:MI:SS') SACTION_DATE,
+			t2.SACTION_COMMENT,
+			t2.CONFIRM_SABUN,
+			t2.CONFIRM_NAME,
+			TO_CHAR(t2.CONFIRM_DATE, 'YYYY-MM-DD HH24:MI:SS') CONFIRM_DATE,
+			t2.CONFIRM_COMMENT,
+			t2.RETURN_SABUN,
+			t2.RETURN_NAME,
+			TO_CHAR(t2.RETURN_DATE, 'YYYY-MM-DD HH24:MI:SS') RETURN_DATE,
+			t2.RETURN_COMMENT,
+		    t3.CODE_NAME
+		FROM RYHR.RYHCF02MT t2 LEFT JOIN RYHR.RYHCF01MT t1
+		ON t2.PROJECT_SEQ = t1.PROJECT_SEQ , RYHR.RYHCD10MT t3 
+		WHERE 1=1
+		    AND t2.MEETING_SEQ = #{meetingSeq}
+		    AND t3.GRP_CODE = 'AG' AND t2.MEETING_PLACE = t3.CODE
+	</select>
+	
+	<insert id="insertMeeting" parameterType="MeetingInfo">
+		INSERT /* insertMeeting */
+		INTO RYHR.RYHCF02MT (
+			MEETING_SEQ,
+			PROJECT_SEQ,
+			MEETING_NAME,
+			MEETING_START_DATE,
+			MEETING_END_DATE,
+			MEETING_PLACE,
+			MEETING_TYPE,
+			MEETING_STATUS,
+			SAUP_CODE,
+			DEPT_CODE,
+			DEPT_NAME,
+			REG_SABUN,
+			REG_NAME,
+			MEETING_REG_DATE,
+			UPD_SABUN,
+			UPD_NAME,
+			MEETING_UPD_DATE
+		) VALUES (
+			SEQ_RYHCF02MT.NEXTVAL,
+			#{projectSeq},
+			#{meetingName},
+			TO_DATE(#{meetingStartDate}, 'YYYY-MM-DD HH24:MI'),
+			TO_DATE(#{meetingEndDate}, 'YYYY-MM-DD HH24:MI'),
+			#{meetingPlace},
+			#{meetingType},
+			#{meetingStatus},
+			#{saupCode},
+			#{deptCode},
+			#{deptName},
+			#{regSabun},
+			#{regName},
+			SYSDATE,
+			#{regSabun},
+			#{regName},
+			SYSDATE
+		)
+		<selectKey keyProperty="currseq" resultType="long" order="AFTER">
+			SELECT SEQ_RYHCF02MT.CURRVAL FROM DUAL
+		</selectKey>
+	</insert>
+	
+	<update id="updateMeeting" parameterType="MeetingInfo">
+		UPDATE /* updateMeeting */
+			RYHR.RYHCF02MT 
+		SET 
+			PROJECT_SEQ = #{projectSeq}, 
+			MEETING_NAME = #{meetingName}, 
+			MEETING_START_DATE = TO_DATE(#{meetingStartDate}, 'YYYY-MM-DD HH24:MI'), 
+			MEETING_END_DATE = TO_DATE(#{meetingEndDate}, 'YYYY-MM-DD HH24:MI'), 
+			MEETING_PLACE = #{meetingPlace},
+			MEETING_STATUS = #{meetingStatus},
+			UPD_SABUN = #{updSabun},
+			UPD_NAME = #{updName}, 
+			MEETING_UPD_DATE = SYSDATE
+		WHERE 
+			MEETING_SEQ = #{meetingSeq}
+	</update>
+	
+	<delete id="deleteMeeting" parameterType="MeetingInfo">
+		DELETE /* deleteMeeting */
+		FROM RYHR.RYHCF02MT 
+		WHERE 
+			MEETING_SEQ = #{meetingSeq} 
+	</delete>
+	
+	<update id="insertMeetingResult" parameterType="MeetingInfo">
+		UPDATE /* insertMeetingResult */
+			RYHR.RYHCF02MT 
+		SET 
+			MEETING_STATUS = #{meetingStatus}, 
+			MEETING_CONTENTS = #{meetingContents}, 
+			DECISION_CONTENTS = #{decisionContents}, 
+			PLAN_CONTENTS = #{planContents}, 
+			ISSUE_CONTENTS = #{issueContents}, 
+			<choose>
+				<when test="attachFilepath1 != null and attachFilepath1 != ''">
+			ATTACH_FILEPATH1 = #{attachFilepath1},
+				</when>
+				<otherwise>
+			ATTACH_FILEPATH1 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilename1 != null and attachFilename1 != ''">
+			ATTACH_FILENAME1 = #{attachFilename1}, 
+				</when>
+				<otherwise>
+			ATTACH_FILENAME1 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilesize1 != null and attachFilesize1 != ''">
+			ATTACH_FILESIZE1 = #{attachFilesize1}, 
+				</when>
+				<otherwise>
+			ATTACH_FILESIZE1 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilepath2 != null and attachFilepath2 != ''">
+			ATTACH_FILEPATH2 = #{attachFilepath2},
+				</when>
+				<otherwise>
+			ATTACH_FILEPATH2 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilename2 != null and attachFilename2 != ''">
+			ATTACH_FILENAME2 = #{attachFilename2}, 
+				</when>
+				<otherwise>
+			ATTACH_FILENAME2 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilesize2 != null and attachFilesize2 != ''">
+			ATTACH_FILESIZE2 = #{attachFilesize2}, 
+				</when>
+				<otherwise>
+			ATTACH_FILESIZE2 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilepath3 != null and attachFilepath3 != ''">
+			ATTACH_FILEPATH3 = #{attachFilepath3},
+				</when>
+				<otherwise>
+			ATTACH_FILEPATH3 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilename3 != null and attachFilename3 != ''">
+			ATTACH_FILENAME3 = #{attachFilename3}, 
+				</when>
+				<otherwise>
+			ATTACH_FILENAME3 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilesize3 != null and attachFilesize3 != ''">
+			ATTACH_FILESIZE3 = #{attachFilesize3}, 
+				</when>
+				<otherwise>
+			ATTACH_FILESIZE3 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilepath4 != null and attachFilepath4 != ''">
+			ATTACH_FILEPATH4 = #{attachFilepath4},
+				</when>
+				<otherwise>
+			ATTACH_FILEPATH4 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilename4 != null and attachFilename4 != ''">
+			ATTACH_FILENAME4 = #{attachFilename4}, 
+				</when>
+				<otherwise>
+			ATTACH_FILENAME4 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilesize4 != null and attachFilesize4 != ''">
+			ATTACH_FILESIZE4 = #{attachFilesize4}, 
+				</when>
+				<otherwise>
+			ATTACH_FILESIZE4 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilepath5 != null and attachFilepath5 != ''">
+			ATTACH_FILEPATH5 = #{attachFilepath5},
+				</when>
+				<otherwise>
+			ATTACH_FILEPATH5 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilename5 != null and attachFilename5 != ''">
+			ATTACH_FILENAME5 = #{attachFilename5}, 
+				</when>
+				<otherwise>
+			ATTACH_FILENAME5 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilesize5 != null and attachFilesize5 != ''">
+			ATTACH_FILESIZE5 = #{attachFilesize5}, 
+				</when>
+				<otherwise>
+			ATTACH_FILESIZE5 = null,
+				</otherwise>
+			</choose>
+			<if test="meetingStatus == 'AA'">
+			SACTION_SABUN = #{sactionSabun},
+			SACTION_NAME = #{sactionName},
+			SACTION_DATE = SYSDATE,
+			CONFIRM_SABUN = #{confirmSabun},
+			CONFIRM_NAME = #{confirmName},
+			CONFIRM_DATE = SYSDATE,
+			</if>
+			UPD_SABUN = #{updSabun},
+			UPD_NAME = #{updName},
+			MEETING_RESULT_REG_DATE = SYSDATE, 
+			MEETING_RESULT_UPD_DATE = SYSDATE
+		WHERE MEETING_SEQ = #{meetingSeq}
+	</update>
+	
+	<update id="updateMeetingResult" parameterType="MeetingInfo">
+		UPDATE /* updateMeetingResult */
+		RYHR.RYHCF02MT 
+		SET 
+			MEETING_STATUS = #{meetingStatus}, 
+			MEETING_CONTENTS = #{meetingContents}, 
+			DECISION_CONTENTS = #{decisionContents}, 
+			PLAN_CONTENTS = #{planContents}, 
+			ISSUE_CONTENTS = #{issueContents}, 
+			<choose>
+				<when test="attachFilepath1 != null and attachFilepath1 != ''">
+			ATTACH_FILEPATH1 = #{attachFilepath1},
+				</when>
+				<otherwise>
+			ATTACH_FILEPATH1 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilename1 != null and attachFilename1 != ''">
+			ATTACH_FILENAME1 = #{attachFilename1}, 
+				</when>
+				<otherwise>
+			ATTACH_FILENAME1 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilesize1 != null and attachFilesize1 != ''">
+			ATTACH_FILESIZE1 = #{attachFilesize1}, 
+				</when>
+				<otherwise>
+			ATTACH_FILESIZE1 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilepath2 != null and attachFilepath2 != ''">
+			ATTACH_FILEPATH2 = #{attachFilepath2},
+				</when>
+				<otherwise>
+			ATTACH_FILEPATH2 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilename2 != null and attachFilename2 != ''">
+			ATTACH_FILENAME2 = #{attachFilename2}, 
+				</when>
+				<otherwise>
+			ATTACH_FILENAME2 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilesize2 != null and attachFilesize2 != ''">
+			ATTACH_FILESIZE2 = #{attachFilesize2}, 
+				</when>
+				<otherwise>
+			ATTACH_FILESIZE2 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilepath3 != null and attachFilepath3 != ''">
+			ATTACH_FILEPATH3 = #{attachFilepath3},
+				</when>
+				<otherwise>
+			ATTACH_FILEPATH3 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilename3 != null and attachFilename3 != ''">
+			ATTACH_FILENAME3 = #{attachFilename3}, 
+				</when>
+				<otherwise>
+			ATTACH_FILENAME3 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilesize3 != null and attachFilesize3 != ''">
+			ATTACH_FILESIZE3 = #{attachFilesize3}, 
+				</when>
+				<otherwise>
+			ATTACH_FILESIZE3 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilepath4 != null and attachFilepath4 != ''">
+			ATTACH_FILEPATH4 = #{attachFilepath4},
+				</when>
+				<otherwise>
+			ATTACH_FILEPATH4 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilename4 != null and attachFilename4 != ''">
+			ATTACH_FILENAME4 = #{attachFilename4}, 
+				</when>
+				<otherwise>
+			ATTACH_FILENAME4 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilesize4 != null and attachFilesize4 != ''">
+			ATTACH_FILESIZE4 = #{attachFilesize4}, 
+				</when>
+				<otherwise>
+			ATTACH_FILESIZE4 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilepath5 != null and attachFilepath5 != ''">
+			ATTACH_FILEPATH5 = #{attachFilepath5},
+				</when>
+				<otherwise>
+			ATTACH_FILEPATH5 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilename5 != null and attachFilename5 != ''">
+			ATTACH_FILENAME5 = #{attachFilename5}, 
+				</when>
+				<otherwise>
+			ATTACH_FILENAME5 = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilesize5 != null and attachFilesize5 != ''">
+			ATTACH_FILESIZE5 = #{attachFilesize5}, 
+				</when>
+				<otherwise>
+			ATTACH_FILESIZE5 = null,
+				</otherwise>
+			</choose>
+			UPD_SABUN = #{updSabun},
+			UPD_NAME = #{updName},
+			MEETING_RESULT_UPD_DATE = SYSDATE
+		WHERE MEETING_SEQ = #{meetingSeq}
+	</update>
+	
+	<update id="deleteMeetingResult" parameterType="MeetingInfo">
+		UPDATE /* deleteMeetingResult */
+			RYHR.RYHCF02MT 
+		SET 
+			MEETING_STATUS = #{meetingStatus}, 
+			MEETING_CONTENTS = null,
+			DECISION_CONTENTS = null, 
+			PLAN_CONTENTS = null, 
+			ISSUE_CONTENTS = null, 
+			ATTACH_FILEPATH1 = null, 
+			ATTACH_FILENAME1 = null, 
+			ATTACH_FILESIZE1 = null,
+			ATTACH_FILEPATH2 = null, 
+			ATTACH_FILENAME2 = null, 
+			ATTACH_FILESIZE2 = null,
+			ATTACH_FILEPATH3 = null, 
+			ATTACH_FILENAME3 = null, 
+			ATTACH_FILESIZE3 = null,
+			ATTACH_FILEPATH4 = null, 
+			ATTACH_FILENAME4 = null, 
+			ATTACH_FILESIZE4 = null,
+			ATTACH_FILEPATH5 = null, 
+			ATTACH_FILENAME5 = null, 
+			ATTACH_FILESIZE5 = null, 
+			UPD_SABUN = #{updSabun},
+			UPD_NAME = #{updName},
+			MEETING_RESULT_REG_DATE = null, 
+			MEETING_RESULT_UPD_DATE = null
+		WHERE 
+			MEETING_SEQ = #{meetingSeq} 
+	</update>
+	
+	<update id="confirmMeetingResult" parameterType="MeetingInfo">
+		UPDATE /* confirmMeetingResult */
+			RYHR.RYHCF02MT 
+		SET 
+			<choose>
+				<when test="meetingStatus == '04'">
+					SACTION_SABUN = #{sactionSabun}, 
+					SACTION_NAME = #{sactionName}, 
+					SACTION_DATE = SYSDATE,
+					SACTION_COMMENT = #{sactionComment},
+				</when>
+				<when test="meetingStatus == '99'">
+					RETURN_SABUN = #{returnSabun}, 
+					RETURN_NAME = #{returnName}, 
+					RETURN_DATE = SYSDATE,
+					RETURN_COMMENT = #{returnComment},
+				</when>
+				<when test="meetingStatus == 'AA'">
+					CONFIRM_SABUN = #{confirmSabun}, 
+					CONFIRM_NAME = #{confirmName}, 
+					CONFIRM_DATE = SYSDATE,
+					CONFIRM_COMMENT = #{confirmComment},
+				</when>
+			</choose>
+			MEETING_STATUS = #{meetingStatus}
+		WHERE MEETING_SEQ = #{meetingSeq}
+	</update>
+	
+	<insert id="insertVisitor" parameterType="MeetingInfo">
+		INSERT /* insertVisitor */
+		INTO RYHR.RYHCF02MT (
+			MEETING_SEQ,
+			PROJECT_SEQ,
+			MEETING_NAME,
+			MEETING_START_DATE,
+			MEETING_END_DATE,
+			MEETING_PLACE,
+			MEETING_TYPE,
+			MEETING_STATUS,
+			SAUP_CODE,
+			DEPT_CODE,
+			DEPT_NAME,
+			REG_SABUN,
+			REG_NAME,
+			MEETING_REG_DATE,
+			UPD_SABUN,
+			UPD_NAME,
+			MEETING_UPD_DATE,
+			VISIT_COMPANY,
+			VISIT_NAME
+		) VALUES (
+			SEQ_RYHCF02MT.NEXTVAL,
+			#{projectSeq},
+			#{meetingName},
+			TO_DATE(#{meetingStartDate}, 'YYYY-MM-DD HH24:MI'),
+			TO_DATE(#{meetingEndDate}, 'YYYY-MM-DD HH24:MI'),
+			#{meetingPlace},
+			#{meetingType},
+			#{meetingStatus},
+			#{saupCode},
+			#{deptCode},
+			#{deptName},
+			#{regSabun},
+			#{regName},
+			SYSDATE,
+			#{regSabun},
+			#{regName},
+			SYSDATE,
+			#{visitCompany},
+			#{visitName}
+		)
+		<selectKey keyProperty="currseq" resultType="long" order="AFTER">
+			SELECT SEQ_RYHCF02MT.CURRVAL FROM DUAL
+		</selectKey>
+	</insert>
+	
+	<update id="updateVisitor" parameterType="MeetingInfo">
+		UPDATE /* updateVisitor */
+			RYHR.RYHCF02MT 
+		SET 
+			PROJECT_SEQ = #{projectSeq}, 
+			MEETING_NAME = #{meetingName}, 
+			MEETING_START_DATE = TO_DATE(#{meetingStartDate}, 'YYYY-MM-DD HH24:MI'), 
+			MEETING_END_DATE = TO_DATE(#{meetingEndDate}, 'YYYY-MM-DD HH24:MI'), 
+			MEETING_PLACE = #{meetingPlace}, 
+			MEETING_STATUS = #{meetingStatus},
+			UPD_SABUN = #{updSabun},
+			UPD_NAME = #{updName},
+			MEETING_UPD_DATE = SYSDATE,
+			VISIT_COMPANY = #{visitCompany}, 
+			VISIT_NAME = #{visitName}
+		WHERE MEETING_SEQ = #{meetingSeq} 
+	</update>
+	
+</mapper>

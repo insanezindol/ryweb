@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.TicketMapper_Ryhr">
+	
+	<sql id="selectTicketListWhere">
+		<if test="deptCodeList != null">
+			AND ( DEPT_CODE IN
+			<foreach collection="deptCodeList" item="item" index="index" separator="," open="(" close=")">
+			#{item}
+			</foreach>
+			<foreach collection="attSabunList" item="item" index="index" separator="OR" open="OR" close=")">
+			REG_SABUN = #{item}
+			</foreach>
+		</if>
+		<if test="sabunList != null">
+			<foreach collection="sabunList" item="item" index="index" separator="OR" open="AND (" close=")">
+			REG_SABUN = #{item}
+			</foreach>
+		</if>
+		<if test="s_visitCompany != null and s_visitCompany != ''">
+			AND VISIT_COMPANY LIKE '%'||#{s_visitCompany}||'%'
+		</if>
+		<if test="s_visitName != null and s_visitName != ''">
+			AND VISIT_NAME LIKE '%'||#{s_visitName}||'%'
+		</if>
+		<if test="s_meetingName != null and s_meetingName != ''">
+			AND VISIT_PURPOSE LIKE '%'||#{s_meetingName}||'%'
+		</if>
+		<if test="(startDate != null and startDate != '') and (endDate != null and endDate != '')">
+			AND GIVE_DATE BETWEEN TO_DATE(#{startDate},'YYYY-MM-DD HH24:MI') AND TO_DATE(#{endDate},'YYYY-MM-DD HH24:MI')
+		</if>
+		<if test="s_refdeptCode != null and s_refdeptCode != ''">
+			AND REF_DEPT_CODE = #{s_refdeptCode}
+		</if>
+		<if test="s_deptCode != null and s_deptCode != ''">
+			AND DEPT_CODE = #{s_deptCode}
+		</if>
+		<if test="s_regName != null and s_regName != ''">
+			AND REG_NAME = #{s_regName}
+		</if>
+		<if test="s_status != null and s_status != ''">
+			AND STATUS = #{s_status}
+		</if>
+	</sql>
+	
+	<select id="selectTicketListCount" parameterType="PageParam" resultType="int">
+		SELECT /* selectTicketListCount */
+			COUNT(1)
+	    FROM RYHR.RYHCF04MT
+	    WHERE 1=1
+	    <include refid="selectTicketListWhere" />
+	</select>
+	
+	<select id="selectTicketList" parameterType="PageParam" resultType="TicketInfo">
+		SELECT /* selectTicketList */
+			b.RNUM,
+			b.PARKING_SEQ,
+			b.VISIT_SEQ,
+			b.VISIT_COMPANY,
+			b.VISIT_NAME,
+			b.VISIT_PURPOSE,
+			TO_CHAR(b.GIVE_DATE, 'YYYY-MM-DD HH24:MI') GIVE_DATE,
+			b.COUNT_HOUR2,
+			b.COUNT_HOUR3,
+			b.COUNT_HOUR4,
+			b.COUNT_HOUR6,
+			b.COUNT_HOUR8,
+			b.COUNT_HOUR10,
+			b.COUNT_HOUR24,
+			b.IS_WEB_SALE,
+			b.WEB_SALE_PRICE,
+			b.STATUS,
+			b.DEPT_CODE,
+			b.DEPT_NAME,
+			b.REG_SABUN,
+			b.REG_NAME,
+			TO_CHAR(b.REG_DATE, 'YYYY-MM-DD HH24:MI') REG_DATE,
+			TO_CHAR(b.UPD_DATE, 'YYYY-MM-DD HH24:MI') UPD_DATE,
+			b.REF_DEPT_CODE,
+			b.REF_DEPT_NAME,
+			b.CONFIRM_SABUN,
+			b.CONFIRM_NAME
+		FROM (
+		  SELECT
+		    ROWNUM RNUM,
+		    a.*
+		  FROM (
+		    SELECT
+				*
+			FROM 
+				RYHR.RYHCF04MT
+			WHERE 1=1
+				<include refid="selectTicketListWhere" />
+			ORDER BY GIVE_DATE DESC
+		  ) a
+		) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<select id="selectTicket" parameterType="TicketInfo" resultType="TicketInfo">
+		SELECT /* selectTicket */
+		    PARKING_SEQ,
+			VISIT_SEQ,
+			VISIT_COMPANY,
+			VISIT_NAME,
+			VISIT_PURPOSE,
+			TO_CHAR(GIVE_DATE, 'YYYY-MM-DD HH24:MI') GIVE_DATE,
+			COUNT_HOUR2,
+			COUNT_HOUR3,
+			COUNT_HOUR4,
+			COUNT_HOUR6,
+			COUNT_HOUR8,
+			COUNT_HOUR10,
+			COUNT_HOUR24,
+			IS_WEB_SALE,
+			WEB_SALE_PRICE,
+			STATUS,
+			DEPT_CODE,
+			DEPT_NAME,
+			REG_SABUN,
+			REG_NAME,
+			TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI') REG_DATE,
+			TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI') UPD_DATE,
+			REF_DEPT_CODE,
+			REF_DEPT_NAME,
+			CONFIRM_SABUN,
+			CONFIRM_NAME
+		FROM 
+			RYHR.RYHCF04MT
+		WHERE 1=1
+			<if test="parkingSeq != null and parkingSeq != ''">
+			AND PARKING_SEQ = #{parkingSeq}
+			</if>
+	</select>
+	
+	<insert id="insertTicket" parameterType="TicketInfo">
+		INSERT /* insertTicket */
+		INTO RYHR.RYHCF04MT (
+			PARKING_SEQ,
+			VISIT_SEQ,
+			VISIT_COMPANY,
+			VISIT_NAME,
+			VISIT_PURPOSE,
+			COUNT_HOUR2,
+			COUNT_HOUR3,
+			COUNT_HOUR4,
+			COUNT_HOUR6,
+			COUNT_HOUR24,
+			IS_WEB_SALE,
+			WEB_SALE_PRICE,
+			STATUS,
+			DEPT_CODE,
+			DEPT_NAME,
+			REG_SABUN,
+			REG_NAME,
+			REG_DATE,
+			UPD_DATE,
+			REF_DEPT_CODE,
+			REF_DEPT_NAME
+			<if test="confirmSabun != null">
+			,CONFIRM_SABUN
+			</if>
+			<if test="confirmName != null">
+			,CONFIRM_NAME , GIVE_DATE
+			</if>
+		) VALUES (
+			SEQ_RYHCF04MT.NEXTVAL,
+			#{visitSeq},
+			#{visitCompany},
+			#{visitName},
+			#{visitPurpose},
+			#{countHour2},
+			#{countHour3},
+			#{countHour4},
+			#{countHour6},
+			#{countHour24},
+			#{isWebSale},
+			#{webSalePrice},
+			#{status},
+			#{deptCode},
+			#{deptName},
+			#{regSabun},
+			#{regName},
+			SYSDATE,
+			SYSDATE,
+			#{refDeptCode},
+			#{refDeptName}
+			<if test="confirmSabun != null">
+			,#{confirmSabun}
+			</if>
+			<if test="confirmName != null">
+			,#{confirmName} , SYSDATE
+			</if>
+		)
+	</insert>
+	
+	<update id="updateTicket" parameterType="TicketInfo">
+		UPDATE /* updateTicket */
+			RYHR.RYHCF04MT 
+		SET 
+			VISIT_SEQ = #{visitSeq}, 
+			VISIT_COMPANY = #{visitCompany}, 
+			VISIT_NAME = #{visitName}, 
+			VISIT_PURPOSE = #{visitPurpose}, 
+			COUNT_HOUR2 = #{countHour2}, 
+			COUNT_HOUR3 = #{countHour3}, 
+			COUNT_HOUR4 = #{countHour4}, 
+			COUNT_HOUR6 = #{countHour6}, 
+			COUNT_HOUR24 = #{countHour24},
+			IS_WEB_SALE = #{isWebSale}, 
+			WEB_SALE_PRICE = #{webSalePrice},
+			UPD_DATE = SYSDATE,
+			REF_DEPT_CODE = #{refDeptCode},
+			REF_DEPT_NAME = #{refDeptName},
+			GIVE_DATE = TO_DATE(#{giveDate}, 'YYYY-MM-DD HH24:MI')
+		WHERE 
+			PARKING_SEQ = #{parkingSeq}
+	</update>
+	
+	<delete id="deleteTicket" parameterType="TicketInfo">
+		DELETE /* deleteTicket */
+		FROM RYHR.RYHCF04MT 
+		WHERE PARKING_SEQ = #{parkingSeq} 
+	</delete>
+	
+	<update id="confirmTicket" parameterType="TicketInfo">
+		UPDATE /* confirmTicket */
+			RYHR.RYHCF04MT 
+		SET 
+			STATUS = #{status},
+			CONFIRM_SABUN = #{confirmSabun},
+			CONFIRM_NAME = #{confirmName},
+			GIVE_DATE = SYSDATE
+		WHERE 
+			PARKING_SEQ = #{parkingSeq} 
+	</update>
+	
+</mapper>

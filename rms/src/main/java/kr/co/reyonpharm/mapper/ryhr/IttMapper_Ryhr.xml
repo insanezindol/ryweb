@@ -1,0 +1,343 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.IttMapper_Ryhr">
+	
+	<sql id="selectCommonCodeListWhere">
+		<if test="s_grpCode != null and s_grpCode != ''">
+			AND GRP_CODE = #{s_grpCode}
+		</if>
+		<if test="s_grpName != null and s_grpName != ''">
+			AND GRP_NAME LIKE '%'||#{s_grpName}||'%'
+		</if>
+		<if test="s_codeName != null and s_codeName != ''">
+			AND CODE_NAME LIKE '%'||#{s_codeName}||'%'
+		</if>
+		<if test="s_useGbn != null and s_useGbn != ''">
+			AND USE_GBN = #{s_useGbn}
+		</if>
+	</sql>
+	
+	<select id="selectCommonCodeListCount" parameterType="PageParam" resultType="int">
+		SELECT /* selectCommonCodeListCount */
+			COUNT(1)
+		FROM (
+			SELECT
+			    GRP_CODE,
+			    CODE,
+			    GRP_NAME,
+			    CODE_NAME,
+			    CODE_DESC,
+			    USE_GBN,
+			    ITEM1,
+			    ITEM2,
+			    ITEM3,
+			    ITEM4,
+			    SORT_GBN,
+			    HIDDEN_GBN
+			FROM RYHR.RYHCD10MT
+			WHERE 1=1
+				<include refid="selectCommonCodeListWhere" />
+			) a
+	</select>
+	
+	<select id="selectCommonCodeList" parameterType="PageParam" resultType="CommonCodeInfo">
+		SELECT /* selectCommonCodeList */
+			b.*
+		FROM (
+			SELECT
+				ROWNUM RNUM,
+				a.*
+			FROM (
+				SELECT
+				    GRP_CODE,
+				    CODE,
+				    GRP_NAME,
+				    CODE_NAME,
+				    CODE_DESC,
+				    USE_GBN,
+				    ITEM1,
+				    ITEM2,
+				    ITEM3,
+				    ITEM4,
+				    SORT_GBN,
+				    HIDDEN_GBN
+				FROM RYHR.RYHCD10MT
+				WHERE 1=1
+					<include refid="selectCommonCodeListWhere" />
+				ORDER BY GRP_CODE DESC, SORT_GBN
+				) a
+			) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<select id="selectCommonCodeInfo" parameterType="CommonCodeInfo" resultType="CommonCodeInfo">
+		SELECT /* selectCommonCodeInfo */
+		    GRP_CODE,
+		    CODE,
+		    GRP_NAME,
+		    CODE_NAME,
+		    CODE_DESC,
+		    USE_GBN,
+		    ITEM1,
+		    ITEM2,
+		    ITEM3,
+		    ITEM4,
+		    SORT_GBN,
+		    HIDDEN_GBN
+		FROM RYHR.RYHCD10MT
+		WHERE 1=1
+			AND GRP_CODE = #{grpCode}
+			AND CODE = #{code}
+	</select>
+	
+	<insert id="insertCommonCodeInfo" parameterType="CommonCodeInfo">
+		INSERT /* insertCommonCodeInfo */
+		INTO RYHR.RYHCD10MT (
+			GRP_CODE
+		    ,CODE
+		    ,GRP_NAME
+		    <if test="codeName != null and codeName != ''">
+		    ,CODE_NAME
+		    </if>
+		    <if test="codeDesc != null and codeDesc != ''">
+		    ,CODE_DESC
+		    </if>
+		    <if test="useGbn != null and useGbn != ''">
+		    ,USE_GBN
+		    </if>
+		    <if test="item1 != null and item1 != ''">
+		    ,ITEM1
+		    </if>
+		    <if test="item2 != null and item2 != ''">
+		    ,ITEM2
+		    </if>
+		    <if test="item3 != null and item3 != ''">
+		    ,ITEM3
+		    </if>
+		    <if test="item4 != null and item4 != ''">
+		    ,ITEM4
+		    </if>
+		    <if test="sortGbn != null and sortGbn != ''">
+		    ,SORT_GBN
+		    </if>
+		    <if test="hiddenGbn != null and hiddenGbn != ''">
+		    ,HIDDEN_GBN
+		    </if>
+		) VALUES (
+			#{grpCode}
+		    ,#{code}
+		    ,#{grpName}
+		    <if test="codeName != null and codeName != ''">
+		    ,#{codeName}
+		    </if>
+		    <if test="codeDesc != null and codeDesc != ''">
+		    ,#{codeDesc}
+		    </if>
+		    <if test="useGbn != null and useGbn != ''">
+		    ,#{useGbn}
+		    </if>
+		    <if test="item1 != null and item1 != ''">
+		    ,#{item1}
+		    </if>
+		    <if test="item2 != null and item2 != ''">
+		    ,#{item2}
+		    </if>
+		    <if test="item3 != null and item3 != ''">
+		    ,#{item3}
+		    </if>
+		    <if test="item4 != null and item4 != ''">
+		    ,#{item4}
+		    </if>
+		    <if test="sortGbn != null and sortGbn != ''">
+		    ,#{sortGbn}
+		    </if>
+		    <if test="hiddenGbn != null and hiddenGbn != ''">
+		    ,#{hiddenGbn}
+		    </if>
+		)
+	</insert>
+	
+	<update id="updateCommonCodeInfo" parameterType="CommonCodeInfo">
+		UPDATE /* updateCommonCodeInfo */
+			RYHR.RYHCD10MT
+		SET
+			GRP_NAME = #{grpName}
+			<choose>
+			<when test="codeName != null and codeName != ''">,CODE_NAME = #{codeName}</when>
+			<otherwise>,CODE_NAME = NULL</otherwise>
+			</choose>
+		    <choose>
+		    <when test="codeDesc != null and codeDesc != ''">,CODE_DESC = #{codeDesc}</when>
+		    <otherwise>,CODE_DESC = NULL</otherwise>
+		    </choose>
+		    <choose>
+		    <when test="useGbn != null and useGbn != ''">,USE_GBN = #{useGbn}</when>
+		    <otherwise>,USE_GBN = NULL</otherwise>
+		    </choose>
+		    <choose>
+		    <when test="item1 != null and item1 != ''">,ITEM1 = #{item1}</when>
+		    <otherwise>,ITEM1 = NULL</otherwise>
+		    </choose>
+		    <choose>
+		    <when test="item2 != null and item2 != ''">,ITEM2 = #{item2}</when>
+		    <otherwise>,ITEM2 = NULL</otherwise>
+		    </choose>
+		    <choose>
+		    <when test="item3 != null and item3 != ''">,ITEM3 = #{item3}</when>
+		    <otherwise>,ITEM3 = NULL</otherwise>
+		    </choose>
+		    <choose>
+		    <when test="item4 != null and item4 != ''">,ITEM4 = #{item4}</when>
+		    <otherwise>,ITEM4 = NULL</otherwise>
+		    </choose>
+		    <choose>
+		    <when test="sortGbn != null and sortGbn != ''">,SORT_GBN = #{sortGbn}</when>
+		    <otherwise>,SORT_GBN = NULL</otherwise>
+		    </choose>
+		    <choose>
+		    <when test="hiddenGbn != null and hiddenGbn != ''">,HIDDEN_GBN = #{hiddenGbn}</when>
+		    <otherwise>,HIDDEN_GBN = NULL</otherwise>
+		    </choose>
+		WHERE GRP_CODE = #{grpCode} AND CODE = #{code}
+	</update>
+	
+	<delete id="deleteCommonCodeInfo" parameterType="CommonCodeInfo">
+		DELETE /* deleteCommonCodeInfo */
+		FROM RYHR.RYHCD10MT
+		WHERE GRP_CODE = #{grpCode} AND CODE = #{code}
+	</delete>
+	
+	<sql id="selectGroupwareExtListWhere">
+		<if test="s_user != null and s_user != ''">
+			AND t2.KNAME LIKE '%'||#{s_user}||'%'
+		</if>
+		<if test="(startDate != null and startDate != '') and (endDate != null and endDate != '')">
+			AND t1.START_DATE <![CDATA[>=]]> TO_DATE(#{startDate},'YYYY-MM-DD') AND t1.END_DATE <![CDATA[<=]]> TO_DATE(#{endDate},'YYYY-MM-DD')
+		</if>
+		<if test="s_reqComment != null and s_reqComment != ''">
+			AND t1.REQ_COMMENT LIKE '%'||#{s_reqComment}||'%'
+		</if>
+		<if test="s_status != null and s_status != ''">
+			AND t1.STATUS = #{s_status}
+		</if>
+	</sql>
+	
+	<select id="selectGroupwareExtListCount" parameterType="PageParam" resultType="int">
+		SELECT /* selectGroupwareExtListCount */
+			COUNT(1)
+		FROM (
+			SELECT 
+				t1.REQ_SEQ,
+				t1.SABUN,
+				t2.KNAME,
+				t3.DEPT_NAME,
+				TO_CHAR(t1.START_DATE, 'YYYY-MM-DD HH24:MI') START_DATE,
+				TO_CHAR(t1.END_DATE, 'YYYY-MM-DD HH24:MI') END_DATE,
+				t1.ACCESS_ING_TYPE,
+				t1.ACCESS_END_TYPE,
+				t1.REQ_COMMENT,
+				t1.STATUS
+			FROM 
+				RYHR.RYHCF16MT t1
+				INNER JOIN RYHR.RYHZZ01MT t2 ON t1.SABUN = t2.SABUN
+				INNER JOIN RYHR.RYHZZ02MT t3 ON t2.DEPT_CODE = t3.DEPT_CODE
+			WHERE 1=1
+				<include refid="selectGroupwareExtListWhere" />
+			) a
+	</select>
+	
+	<select id="selectGroupwareExtList" parameterType="PageParam" resultType="GroupwareExtInfo">
+		SELECT /* selectGroupwareExtList */
+			b.*
+		FROM (
+			SELECT
+				ROWNUM RNUM,
+				a.*
+			FROM (
+				SELECT 
+					t1.REQ_SEQ,
+					t1.SABUN,
+					t2.KNAME,
+					t3.DEPT_NAME,
+					TO_CHAR(t1.START_DATE, 'YYYY-MM-DD HH24:MI') START_DATE,
+					TO_CHAR(t1.END_DATE, 'YYYY-MM-DD HH24:MI') END_DATE,
+					t1.ACCESS_ING_TYPE,
+					t1.ACCESS_END_TYPE,
+					t1.REQ_COMMENT,
+					t1.STATUS
+				FROM 
+					RYHR.RYHCF16MT t1
+					INNER JOIN RYHR.RYHZZ01MT t2 ON t1.SABUN = t2.SABUN
+					INNER JOIN RYHR.RYHZZ02MT t3 ON t2.DEPT_CODE = t3.DEPT_CODE
+				WHERE 1=1
+					<include refid="selectGroupwareExtListWhere" />
+				ORDER BY t1.REQ_SEQ DESC
+				) a
+			) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<select id="selectGroupwareExt" parameterType="GroupwareExtInfo" resultType="GroupwareExtInfo">
+		SELECT /* selectGroupwareExt */
+			t1.REQ_SEQ,
+			t1.SABUN,
+			t2.KNAME,
+			t3.DEPT_NAME,
+			TO_CHAR(t1.START_DATE, 'YYYY-MM-DD HH24:MI') START_DATE,
+			TO_CHAR(t1.END_DATE, 'YYYY-MM-DD HH24:MI') END_DATE,
+			t1.ACCESS_ING_TYPE,
+			t1.ACCESS_END_TYPE,
+			t1.REQ_COMMENT,
+			t1.STATUS
+		FROM 
+			RYHR.RYHCF16MT t1
+			INNER JOIN RYHR.RYHZZ01MT t2 ON t1.SABUN = t2.SABUN
+			INNER JOIN RYHR.RYHZZ02MT t3 ON t2.DEPT_CODE = t3.DEPT_CODE
+		WHERE 1=1
+			AND t1.REQ_SEQ = #{reqSeq}
+	</select>
+	
+	<insert id="insertGroupwareExt" parameterType="GroupwareExtInfo">
+		INSERT /* insertGroupwareExt */
+		INTO RYHR.RYHCF16MT (
+			REQ_SEQ,
+			SABUN,
+			START_DATE,
+			END_DATE,
+			ACCESS_ING_TYPE,
+			ACCESS_END_TYPE,
+			REQ_COMMENT,
+			STATUS
+		) VALUES (
+			SEQ_RYHCF16MT.NEXTVAL,
+		    #{sabun},
+		    TO_DATE(#{startDate}, 'YYYY-MM-DD HH24'),
+		    TO_DATE(#{endDate}, 'YYYY-MM-DD HH24'),
+		    #{accessIngType},
+		    #{accessEndType},
+		    #{reqComment},
+		    #{status}
+		)
+	</insert>
+	
+	<update id="updateGroupwareExt" parameterType="GroupwareExtInfo">
+		UPDATE /* updateGroupwareExt */
+			RYHR.RYHCF16MT
+		SET
+			SABUN = #{sabun},
+			START_DATE = TO_DATE(#{startDate}, 'YYYY-MM-DD HH24'),
+			END_DATE = TO_DATE(#{endDate}, 'YYYY-MM-DD HH24'),
+			ACCESS_ING_TYPE = #{accessIngType},
+			ACCESS_END_TYPE = #{accessEndType},
+			REQ_COMMENT = #{reqComment},
+			STATUS = #{status}
+		WHERE REQ_SEQ = #{reqSeq}
+	</update>
+	
+	<delete id="deleteGroupwareExt" parameterType="GroupwareExtInfo">
+		DELETE /* deleteGroupwareExt */
+		FROM RYHR.RYHCF16MT
+		WHERE REQ_SEQ = #{reqSeq}
+	</delete>
+	
+</mapper>

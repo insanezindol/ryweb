@@ -1,0 +1,627 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.CommonMapper_Ryhr">
+	
+	<select id="selectCommonCodeList" parameterType="CommonCodeInfo" resultType="CommonCodeInfo">
+		SELECT /* selectCommonCodeList */
+		    GRP_CODE,
+			CODE,
+			GRP_NAME,
+			CODE_NAME,
+			CODE_DESC,
+			USE_GBN,
+			ITEM1,
+			ITEM2,
+			ITEM3,
+			ITEM4,
+			SORT_GBN,
+			HIDDEN_GBN
+		FROM 
+			RYHR.RYHCD10MT
+		WHERE 1=1
+			AND USE_GBN = 'Y'
+			AND GRP_CODE = #{grpCode}
+			<if test="item1 != null and item1 != '' and queType == '01'">
+				<choose>
+            		<when test="item1 == '30'">AND ITEM1 IN ('00', '10', '30')</when>
+            		<otherwise>AND ITEM1 IN ('00', #{item1})</otherwise>
+            	</choose>
+			</if>
+			<if test="item1 != null and item1 != '' and queType == '02'">
+			AND ITEM1 = #{item1}
+			</if>
+			<if test="code != null and code != ''">
+			AND CODE = #{code}
+			</if>
+		ORDER BY SORT_GBN
+	</select>
+	
+	<select id="selectConfirmInfoList" parameterType="ConfirmInfo" resultType="ConfirmInfo">
+		SELECT /* selectConfirmInfoList */
+			A.DEPT_CODE DEPT_CODE,
+			B.DEPT_CODE USER_DEPT_CODE,
+		    C.DEPT_NAME DEPT_NAME,
+		    A.SABUN SABUN,
+		    B.KNAME KNAME
+		FROM
+			RYHR.RYHAH25IT A, RYHR.RYHZZ01MT B, RYHR.RYHZZ02MT C
+		WHERE 1=1
+			AND A.SABUN = B.SABUN
+			AND B.DEPT_CODE = C.DEPT_CODE
+			AND NVL(B.RETIRE_DAY,'99991231') <![CDATA[>=]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+		<if test=" sabun != null and sabun != '' ">
+			AND A.SABUN = #{sabun}
+		</if>
+		<if test=" deptCode != null and deptCode != '' ">
+			AND A.DEPT_CODE = #{deptCode}
+		</if>
+		ORDER BY A.DEPT_CODE
+	</select>
+	
+	<select id="selectTakeoverList" parameterType="TakeOverInfo" resultType="TakeOverInfo">
+		SELECT /* selectTakeoverList */
+			LEVEL,
+		    A.GIVE_SEQ,
+		    A.GIVE_SABUN,
+		    B.KNAME GIVE_NAME,
+		    A.RECEIVE_SABUN,
+		    C.KNAME RECEIVE_NAME,
+		    TO_CHAR(A.GIVE_DATE, 'YYYY-MM-DD HH24:MI') GIVE_DATE,
+		    TO_CHAR(A.REG_DATE, 'YYYY-MM-DD HH24:MI') REG_DATE,
+		    A.STATUS
+		FROM 
+		    RYHR.RYHCF06MT A
+		    INNER JOIN RYHR.RYHZZ01MT B ON A.GIVE_SABUN = B.SABUN
+		    INNER JOIN RYHR.RYHZZ01MT C ON A.RECEIVE_SABUN = C.SABUN
+		WHERE 1=1
+		<if test="status != null and status != ''">
+			AND A.STATUS = #{status}
+		</if>
+		START WITH A.RECEIVE_SABUN = #{receiveSabun}
+		CONNECT BY PRIOR A.GIVE_SABUN = A.RECEIVE_SABUN
+	</select>
+	
+	<select id="selectTotalDeptList" parameterType="DeptInfo" resultType="DeptInfo">
+		SELECT /* selectTotalDeptList */
+		    A.DEPT_CODE,
+		    A.DEPT_PARCO,
+		    DECODE(B.DEPT_NAME,'이연제약','(직속)',B.DEPT_NAME) DEPT_PARCO_NAME,
+		    A.DEPT_NAME,
+		    A.STATE_GB,
+		    A.REG_CODE
+		FROM 
+		    RYHR.RYHZZ02MT A
+		    LEFT OUTER JOIN RYHR.RYHZZ02MT B ON A.DEPT_PARCO = B.DEPT_CODE
+		WHERE 1=1
+		    AND A.STATE_GB = '1'
+		    AND A.DEPT_CODE != '0001'
+		    <if test="deptParco != null and deptParco != ''">
+			START WITH A.DEPT_CODE = #{deptParco}
+			CONNECT BY PRIOR A.DEPT_CODE = A.DEPT_PARCO
+			</if>
+		ORDER BY A.REG_CODE, A.DEPT_CODE
+	</select>
+	
+	<sql id="selectActiveTicketListWhere">
+		<choose>
+			<when test="visitSeq != null and visitSeq != ''">
+				AND ( t2.VISIT_SEQ IS NULL OR t2.VISIT_SEQ = '' OR t2.VISIT_SEQ = #{visitSeq} )
+			</when>
+			<otherwise>
+				AND ( t2.VISIT_SEQ IS NULL OR t2.VISIT_SEQ = '' )
+			</otherwise>
+		</choose>
+		<if test="deptCodeList != null">
+			AND ( t1.MEET_DEPT_CODE IN
+			<foreach collection="deptCodeList" item="item" index="index" separator="," open="(" close=")">
+			#{item}
+			</foreach>
+			OR t1.MEET_SABUN = #{attSabun} )
+		</if>
+		<if test="sabun != null and sabun != ''">
+			AND ( t1.MEET_SABUN = #{sabun} )
+		</if>
+		<if test="searchText != null and searchText != ''">
+			AND ( t1.VISIT_COMPANY LIKE '%'||#{searchText}||'%' OR t1.VISIT_NAME LIKE '%'||#{searchText}||'%' OR t1.MEET_DEPT_NAME LIKE '%'||#{searchText}||'%' OR t1.MEET_NAME LIKE '%'||#{searchText}||'%' )
+		</if>
+	</sql>
+	
+	<select id="selectActiveTicketListCount" parameterType="PageParam" resultType="int">
+		SELECT /* selectActiveTicketListCount */
+			COUNT(1)
+		FROM 
+			RYHR.RYHCF05MT t1 LEFT OUTER JOIN RYHR.RYHCF04MT t2 ON t1.VISIT_SEQ = t2.VISIT_SEQ
+		WHERE 1=1
+			<include refid="selectActiveTicketListWhere" />
+	</select>
+	
+	<select id="selectActiveTicketList" parameterType="PageParam" resultType="ComingInfo">
+		SELECT /* selectActiveTicketList */
+			b.*
+		FROM (
+		  SELECT
+		    ROWNUM RNUM,
+		    a.*
+		  FROM (
+		    SELECT 
+				t1.VISIT_SEQ,
+				t1.VISIT_COMPANY,
+				t1.VISIT_NAME,
+				TO_CHAR(t1.VISIT_START_DATE, 'YYYY-MM-DD HH24:MI') VISIT_START_DATE,
+				TO_CHAR(t1.VISIT_END_DATE, 'YYYY-MM-DD HH24:MI') VISIT_END_DATE,
+				t1.MEET_DEPT_CODE,
+				t1.MEET_DEPT_NAME,
+				t1.MEET_SABUN,
+				t1.MEET_NAME,
+				t1.REG_DEPT_CODE,
+				t1.REG_DEPT_NAME,
+				t1.REG_SABUN,
+				t1.REG_NAME,
+				TO_CHAR(t1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+				TO_CHAR(t1.UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE
+			FROM 
+				RYHR.RYHCF05MT t1 LEFT OUTER JOIN RYHR.RYHCF04MT t2 ON t1.VISIT_SEQ = t2.VISIT_SEQ
+			WHERE 1=1
+				<include refid="selectActiveTicketListWhere" />
+			ORDER BY 
+				t1.VISIT_SEQ DESC
+		  ) a
+		) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<sql id="selectActiveVisitorListWhere">
+			AND MEETING_TYPE = '02' AND SAUP_CODE = '10'
+		<if test="searchText != null and searchText != ''">
+			AND ( VISIT_COMPANY LIKE '%'||#{searchText}||'%' OR VISIT_NAME LIKE '%'||#{searchText}||'%' OR DEPT_NAME LIKE '%'||#{searchText}||'%' OR REG_NAME LIKE '%'||#{searchText}||'%' )
+		</if>
+	</sql>
+	
+	<select id="selectActiveVisitorListCount" parameterType="PageParam" resultType="int">
+		SELECT /* selectActiveVisitorListCount */
+			COUNT(1)
+		FROM 
+			RYHR.RYHCF02MT
+		WHERE 1=1
+			<include refid="selectActiveVisitorListWhere" />
+	</select>
+	
+	<select id="selectActiveVisitorList" parameterType="PageParam" resultType="MeetingInfo">
+		SELECT /* selectActiveVisitorList */
+			b.*
+		FROM (
+		  SELECT
+		    ROWNUM RNUM,
+		    a.*
+		  FROM (
+			SELECT 
+				MEETING_SEQ,
+				PROJECT_SEQ,
+				MEETING_NAME,
+				MEETING_START_DATE,
+				MEETING_END_DATE,
+				MEETING_PLACE,
+				MEETING_TYPE,
+				MEETING_STATUS,
+				SAUP_CODE,
+				DEPT_CODE,
+				DEPT_NAME,
+				REG_SABUN,
+				REG_NAME,
+				MEETING_REG_DATE,
+				MEETING_UPD_DATE,
+				VISIT_COMPANY,
+				VISIT_NAME,
+				MEETING_CONTENTS,
+				DECISION_CONTENTS,
+				PLAN_CONTENTS,
+				ISSUE_CONTENTS,
+				ATTACH_FILEPATH1,
+				ATTACH_FILENAME1,
+				ATTACH_FILESIZE1,
+				MEETING_RESULT_REG_DATE,
+				MEETING_RESULT_UPD_DATE,
+				SACTION_SABUN,
+				SACTION_NAME,
+				SACTION_DATE,
+				SACTION_COMMENT,
+				CONFIRM_SABUN,
+				CONFIRM_NAME,
+				CONFIRM_DATE,
+				CONFIRM_COMMENT,
+				RETURN_SABUN,
+				RETURN_NAME,
+				RETURN_DATE,
+				RETURN_COMMENT,
+				ATTACH_FILEPATH2,
+				ATTACH_FILENAME2,
+				ATTACH_FILESIZE2,
+				ATTACH_FILEPATH3,
+				ATTACH_FILENAME3,
+				ATTACH_FILESIZE3,
+				ATTACH_FILEPATH4,
+				ATTACH_FILENAME4,
+				ATTACH_FILESIZE4,
+				ATTACH_FILEPATH5,
+				ATTACH_FILENAME5,
+				ATTACH_FILESIZE5
+			FROM 
+				RYHR.RYHCF02MT
+			WHERE 1=1
+				<include refid="selectActiveVisitorListWhere" />
+				
+			ORDER BY 
+				MEETING_START_DATE DESC
+		  ) a
+		) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<select id="selectAvailableRoomList" parameterType="MeetingInfo" resultType="CommonCodeInfo">
+		SELECT /* selectAvailableRoomList */
+			GRP_CODE,
+			CODE,
+			GRP_NAME,
+			CODE_NAME,
+			CODE_DESC,
+			USE_GBN,
+			ITEM1,
+			ITEM2,
+			ITEM3,
+			ITEM4,
+			SORT_GBN,
+			HIDDEN_GBN
+		FROM
+			RYHR.RYHCD10MT
+		WHERE 1=1
+			AND USE_GBN = 'Y'
+			AND GRP_CODE = 'AG'
+			<if test="saupCode != null and saupCode != ''">
+				<choose>
+            		<when test="saupCode == '30'">AND ITEM1 IN ('00', '10', '30')</when>
+            		<otherwise>AND ITEM1 IN ('00', #{saupCode})</otherwise>
+            	</choose>
+			</if>
+			AND CODE NOT IN 
+				(SELECT 
+					MEETING_PLACE
+				FROM 
+					RYHR.RYHCF02MT
+				WHERE 1=1
+					AND MEETING_PLACE != '1'
+					AND MEETING_END_DATE <![CDATA[>]]> TO_DATE(#{meetingStartDate},'YYYY-MM-DD HH24:MI') AND MEETING_START_DATE <![CDATA[<]]> TO_DATE(#{meetingEndDate},'YYYY-MM-DD HH24:MI')
+					<if test="meetingSeq != null and meetingSeq != ''">
+					AND MEETING_SEQ != #{meetingSeq}
+					</if>
+				GROUP BY MEETING_PLACE)
+		ORDER BY SORT_GBN
+	</select>
+	
+	<select id="selectTimetableList" parameterType="MeetingInfo" resultType="DateTimePickerInfo">
+		SELECT /* selectTimetableList */
+			t1.MEETING_SEQ ID,
+			'['||TO_CHAR(t1.MEETING_START_DATE, 'HH24:MI')||'~'||TO_CHAR(t1.MEETING_END_DATE, 'HH24:MI')||']'||t1.DEPT_NAME||'('||t1.REG_NAME||')' TITLE,
+			TO_CHAR(t1.MEETING_START_DATE, 'YYYY-MM-DD HH24:MI:SS') "START",
+			TO_CHAR(t1.MEETING_END_DATE, 'YYYY-MM-DD HH24:MI:SS') "END",
+            t2.CODE_NAME TYPE
+		FROM 
+			RYHR.RYHCF02MT t1, RYHR.RYHCD10MT t2
+		WHERE 1=1
+			AND t1.MEETING_PLACE = t2.CODE
+			AND t2.USE_GBN = 'Y'
+			AND t2.GRP_CODE = 'AG'
+            AND t2.ITEM1 != '00'
+            <if test="saupCode != null and saupCode != ''">
+            	<choose>
+            		<when test="saupCode == '30'">AND t1.SAUP_CODE IN ('10', '30')</when>
+            		<otherwise>AND t1.SAUP_CODE = #{saupCode}</otherwise>
+            	</choose>
+            </if>
+			AND t1.MEETING_START_DATE <![CDATA[>=]]> TO_DATE(#{meetingStartDate},'YYYY-MM-DD HH24:MI') 
+			AND t1.MEETING_END_DATE <![CDATA[<=]]> TO_DATE(#{meetingEndDate},'YYYY-MM-DD HH24:MI')
+			<if test="meetingSeq != null and meetingSeq != ''">
+			AND t1.MEETING_SEQ != #{meetingSeq}
+			</if>
+	</select>
+	
+	<select id="selectGnbTodoList" parameterType="PageParam" resultType="MeetingInfo">
+		SELECT /* selectGnbTodoList */
+		    MEETING_STATUS,
+			COUNT(1) CNT
+		  FROM (
+		    SELECT
+				t1.MEETING_SEQ,
+                t1.PROJECT_SEQ,
+                t1.MEETING_NAME,
+                t1.MEETING_START_DATE,
+                t1.MEETING_END_DATE,
+                t1.MEETING_PLACE,
+                t1.MEETING_TYPE,
+                t1.MEETING_STATUS,
+                t1.SAUP_CODE,
+                t1.DEPT_CODE,
+                t1.DEPT_NAME,
+                t1.REG_SABUN,
+                t1.REG_NAME,
+                t1.MEETING_REG_DATE,
+                t1.MEETING_UPD_DATE,
+                t1.VISIT_COMPANY,
+                t1.VISIT_NAME,
+                t1.MEETING_CONTENTS,
+                t1.DECISION_CONTENTS,
+                t1.PLAN_CONTENTS,
+                t1.ISSUE_CONTENTS,
+                t1.ATTACH_FILEPATH1,
+                t1.ATTACH_FILENAME1,
+                t1.ATTACH_FILESIZE1,
+                t1.ATTACH_FILEPATH2,
+                t1.ATTACH_FILENAME2,
+                t1.ATTACH_FILESIZE2,
+                t1.ATTACH_FILEPATH3,
+                t1.ATTACH_FILENAME3,
+                t1.ATTACH_FILESIZE3,
+                t1.ATTACH_FILEPATH4,
+                t1.ATTACH_FILENAME4,
+                t1.ATTACH_FILESIZE4,
+                t1.ATTACH_FILEPATH5,
+                t1.ATTACH_FILENAME5,
+                t1.ATTACH_FILESIZE5,
+                t1.MEETING_RESULT_REG_DATE,
+                t1.MEETING_RESULT_UPD_DATE,
+                t1.SACTION_SABUN,
+                t1.SACTION_NAME,
+                t1.SACTION_DATE,
+                t1.SACTION_COMMENT,
+                t1.CONFIRM_SABUN,
+                t1.CONFIRM_NAME,
+                t1.CONFIRM_DATE,
+                t1.CONFIRM_COMMENT,
+                t1.RETURN_SABUN,
+                t1.RETURN_NAME,
+                t1.RETURN_DATE,
+                t1.RETURN_COMMENT,
+                SUBSTR(XMLAGG(XMLELEMENT(A,',' || t2.ATTENDANT_SABUN) ORDER BY t2.ATTENDANT_SABUN).EXTRACT('//text()'), 2) AS ATTENDANT_SABUN
+			FROM RYHR.RYHCF02MT t1 LEFT OUTER JOIN RYHR.RYHCF03MT t2
+            ON t1.MEETING_SEQ = t2.MEETING_SEQ AND t2.ATTENDANT_TYPE IN ('01', '02')
+			WHERE 1=1
+				AND t1.MEETING_STATUS IN ('02', '03', '04', '99')
+				<choose>
+					<when test="deptCodeList != null">
+						AND ( ( t1.REG_SABUN = #{sabun} AND t1.MEETING_STATUS = '02' )
+						OR ( t1.DEPT_CODE IN
+						<foreach collection="deptCodeList" item="item" index="index" separator="," open="(" close=")">
+						#{item}
+						</foreach>
+						AND t1.MEETING_STATUS = '04' ) )
+					</when>
+					<otherwise>
+						AND ( ( t1.REG_SABUN = #{sabun} AND t1.MEETING_STATUS = '02' ) OR ( t1.REG_SABUN = #{sabun} AND t1.MEETING_STATUS = '03' ) OR ( t1.REG_SABUN = #{sabun} AND t1.MEETING_STATUS = '99' ) )
+					</otherwise>
+				</choose>
+			GROUP BY
+				t1.MEETING_SEQ,
+                t1.PROJECT_SEQ,
+                t1.MEETING_NAME,
+                t1.MEETING_START_DATE,
+                t1.MEETING_END_DATE,
+                t1.MEETING_PLACE,
+                t1.MEETING_TYPE,
+                t1.MEETING_STATUS,
+                t1.SAUP_CODE,
+                t1.DEPT_CODE,
+                t1.DEPT_NAME,
+                t1.REG_SABUN,
+                t1.REG_NAME,
+                t1.MEETING_REG_DATE,
+                t1.MEETING_UPD_DATE,
+                t1.VISIT_COMPANY,
+                t1.VISIT_NAME,
+                t1.MEETING_CONTENTS,
+                t1.DECISION_CONTENTS,
+                t1.PLAN_CONTENTS,
+                t1.ISSUE_CONTENTS,
+                t1.ATTACH_FILEPATH1,
+                t1.ATTACH_FILENAME1,
+                t1.ATTACH_FILESIZE1,
+                t1.ATTACH_FILEPATH2,
+                t1.ATTACH_FILENAME2,
+                t1.ATTACH_FILESIZE2,
+                t1.ATTACH_FILEPATH3,
+                t1.ATTACH_FILENAME3,
+                t1.ATTACH_FILESIZE3,
+                t1.ATTACH_FILEPATH4,
+                t1.ATTACH_FILENAME4,
+                t1.ATTACH_FILESIZE4,
+                t1.ATTACH_FILEPATH5,
+                t1.ATTACH_FILENAME5,
+                t1.ATTACH_FILESIZE5,
+                t1.MEETING_RESULT_REG_DATE,
+                t1.MEETING_RESULT_UPD_DATE,
+                t1.SACTION_SABUN,
+                t1.SACTION_NAME,
+                t1.SACTION_DATE,
+                t1.SACTION_COMMENT,
+                t1.CONFIRM_SABUN,
+                t1.CONFIRM_NAME,
+                t1.CONFIRM_DATE,
+                t1.CONFIRM_COMMENT,
+                t1.RETURN_SABUN,
+                t1.RETURN_NAME,
+                t1.RETURN_DATE,
+                t1.RETURN_COMMENT
+		  ) a
+		  GROUP BY MEETING_STATUS
+	</select>
+	
+	<select id="selectMainScheduleList" parameterType="PageParam" resultType="DateTimePickerInfo">
+		SELECT /* selectMainScheduleList */
+			b.MEETING_SEQ ID,
+			'['||b.DEPT_NAME||'] '||b.MEETING_NAME TITLE,
+			TO_CHAR(b.MEETING_START_DATE, 'YYYY-MM-DD HH24:MI') "START",
+			TO_CHAR(b.MEETING_END_DATE, 'YYYY-MM-DD HH24:MI') "END",
+			b.MEETING_TYPE TYPE,
+			'상세 화면 이동' TOOLTIP
+		FROM (
+		  SELECT
+		    ROWNUM RNUM,
+		    a.*
+		  FROM (
+		    SELECT
+				t1.MEETING_SEQ,
+                t1.PROJECT_SEQ,
+                t1.MEETING_NAME,
+                t1.MEETING_START_DATE,
+                t1.MEETING_END_DATE,
+                t1.MEETING_PLACE,
+                t1.MEETING_TYPE,
+                t1.MEETING_STATUS,
+                t1.SAUP_CODE,
+                t1.DEPT_CODE,
+                t1.DEPT_NAME,
+                t1.REG_SABUN,
+                t1.REG_NAME,
+                t1.MEETING_REG_DATE,
+                t1.MEETING_UPD_DATE,
+                t1.VISIT_COMPANY,
+                t1.VISIT_NAME,
+                t1.MEETING_CONTENTS,
+                t1.DECISION_CONTENTS,
+                t1.PLAN_CONTENTS,
+                t1.ISSUE_CONTENTS,
+                t1.ATTACH_FILEPATH1,
+                t1.ATTACH_FILENAME1,
+                t1.ATTACH_FILESIZE1,
+                t1.ATTACH_FILEPATH2,
+                t1.ATTACH_FILENAME2,
+                t1.ATTACH_FILESIZE2,
+                t1.ATTACH_FILEPATH3,
+                t1.ATTACH_FILENAME3,
+                t1.ATTACH_FILESIZE3,
+                t1.ATTACH_FILEPATH4,
+                t1.ATTACH_FILENAME4,
+                t1.ATTACH_FILESIZE4,
+                t1.ATTACH_FILEPATH5,
+                t1.ATTACH_FILENAME5,
+                t1.ATTACH_FILESIZE5,
+                t1.MEETING_RESULT_REG_DATE,
+                t1.MEETING_RESULT_UPD_DATE,
+                t1.SACTION_SABUN,
+                t1.SACTION_NAME,
+                t1.SACTION_DATE,
+                t1.SACTION_COMMENT,
+                t1.CONFIRM_SABUN,
+                t1.CONFIRM_NAME,
+                t1.CONFIRM_DATE,
+                t1.CONFIRM_COMMENT,
+                t1.RETURN_SABUN,
+                t1.RETURN_NAME,
+                t1.RETURN_DATE,
+                t1.RETURN_COMMENT,
+                SUBSTR(XMLAGG(XMLELEMENT(A,',' || t2.ATTENDANT_SABUN) ORDER BY t2.ATTENDANT_SABUN).EXTRACT('//text()'), 2) AS ATTENDANT_SABUN
+			FROM RYHR.RYHCF02MT t1 LEFT OUTER JOIN RYHR.RYHCF03MT t2
+            ON t1.MEETING_SEQ = t2.MEETING_SEQ AND t2.ATTENDANT_TYPE IN ('01', '02')
+			WHERE 1=1
+			<if test="saupCode != null and saupCode != ''">
+				AND t1.SAUP_CODE = #{saupCode}
+			</if>
+			<if test="deptCodeList != null">
+				AND ( t1.DEPT_CODE IN
+				<foreach collection="deptCodeList" item="item" index="index" separator="," open="(" close=")">
+				#{item}
+				</foreach>
+				OR t1.REG_SABUN = #{attSabun} OR t2.ATTENDANT_SABUN LIKE '%'||#{attSabun}||'%' )
+			</if>
+			<if test="sabun != null and sabun != ''">
+				AND ( t1.REG_SABUN = #{sabun} OR t2.ATTENDANT_SABUN LIKE '%'||#{attSabun}||'%' )
+			</if>
+				AND MEETING_START_DATE <![CDATA[>=]]> TO_DATE(#{startDate},'YYYY-MM-DD') AND MEETING_END_DATE <![CDATA[<=]]> TO_DATE(#{endDate},'YYYY-MM-DD')
+			GROUP BY
+				t1.MEETING_SEQ,
+                t1.PROJECT_SEQ,
+                t1.MEETING_NAME,
+                t1.MEETING_START_DATE,
+                t1.MEETING_END_DATE,
+                t1.MEETING_PLACE,
+                t1.MEETING_TYPE,
+                t1.MEETING_STATUS,
+                t1.SAUP_CODE,
+                t1.DEPT_CODE,
+                t1.DEPT_NAME,
+                t1.REG_SABUN,
+                t1.REG_NAME,
+                t1.MEETING_REG_DATE,
+                t1.MEETING_UPD_DATE,
+                t1.VISIT_COMPANY,
+                t1.VISIT_NAME,
+                t1.MEETING_CONTENTS,
+                t1.DECISION_CONTENTS,
+                t1.PLAN_CONTENTS,
+                t1.ISSUE_CONTENTS,
+                t1.ATTACH_FILEPATH1,
+                t1.ATTACH_FILENAME1,
+                t1.ATTACH_FILESIZE1,
+                t1.ATTACH_FILEPATH2,
+                t1.ATTACH_FILENAME2,
+                t1.ATTACH_FILESIZE2,
+                t1.ATTACH_FILEPATH3,
+                t1.ATTACH_FILENAME3,
+                t1.ATTACH_FILESIZE3,
+                t1.ATTACH_FILEPATH4,
+                t1.ATTACH_FILENAME4,
+                t1.ATTACH_FILESIZE4,
+                t1.ATTACH_FILEPATH5,
+                t1.ATTACH_FILENAME5,
+                t1.ATTACH_FILESIZE5,
+                t1.MEETING_RESULT_REG_DATE,
+                t1.MEETING_RESULT_UPD_DATE,
+                t1.SACTION_SABUN,
+                t1.SACTION_NAME,
+                t1.SACTION_DATE,
+                t1.SACTION_COMMENT,
+                t1.CONFIRM_SABUN,
+                t1.CONFIRM_NAME,
+                t1.CONFIRM_DATE,
+                t1.CONFIRM_COMMENT,
+                t1.RETURN_SABUN,
+                t1.RETURN_NAME,
+                t1.RETURN_DATE,
+                t1.RETURN_COMMENT
+			ORDER BY t1.MEETING_SEQ DESC
+		  ) a
+		) b
+		WHERE 1=1
+	</select>
+	
+	<select id="selectUserEmail" parameterType="UserInfo" resultType="UserInfo">
+		SELECT /* selectUserEmail */
+		    A.SABUN, 
+		    A.KNAME, 
+		    B.REYON_MAIL
+		FROM 
+		    RYHR.RYHZZ01MT A
+		    LEFT OUTER JOIN RYHR.RYHAA01IT B ON A.SABUN = B.SABUN
+		WHERE 1=1 
+			AND A.SABUN = #{sabun}
+		    AND NVL(A.RETIRE_DAY,'99991231') <![CDATA[>=]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+	</select>
+	
+	<update id="updateChangeMeetingType" parameterType="MeetingInfo">
+		UPDATE /* updateChangeMeetingType */
+			RYHR.RYHCF02MT 
+		SET 
+			MEETING_TYPE = #{meetingType}
+		WHERE 
+			MEETING_SEQ = #{meetingSeq}
+	</update>
+	
+	<select id="selectPunctualityAuth" parameterType="PunctualityInfo" resultType="PunctualityInfo">
+		SELECT /* selectPunctualityAuth */
+		    AUTH_VIEW
+		FROM
+    		RYHR.RYHCG01MT
+		WHERE 1=1
+			AND SABUN = #{loginSabun}
+			AND MENU_ID = '/punctuality/punctualityList.do'
+	</select>
+	
+</mapper>

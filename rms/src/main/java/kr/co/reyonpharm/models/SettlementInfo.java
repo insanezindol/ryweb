@@ -1,0 +1,53 @@
+package kr.co.reyonpharm.models;
+
+import lombok.Getter;
+import lombok.Setter;
+
+public class SettlementInfo {
+	private @Getter @Setter String fileName;
+	private @Getter @Setter String fileByte;
+	private @Getter @Setter String fileTime;
+	private @Getter @Setter String yymm;
+	private @Getter @Setter String sabun;
+	private @Getter @Setter String deptName;
+	private @Getter @Setter String kname;
+	private @Getter @Setter String elementCnt;
+	private @Getter @Setter String retireYn;
+	private @Getter @Setter String retireDay;
+	private @Getter @Setter String yymmNextYear;
+	private @Getter @Setter String saup;
+	private @Getter @Setter String gubun;
+	private @Getter @Setter String jumin;
+	private @Getter @Setter String startdate;
+	private @Getter @Setter String enddate;
+	private @Getter @Setter String payTot;
+	private @Getter @Setter String payGy;
+	private @Getter @Setter String paySy;
+	private @Getter @Setter String injungSy;
+	private @Getter @Setter String gainOnStockOptions;
+	private @Getter @Setter String employeeStockOwnership;
+	private @Getter @Setter String officerRetirementIncome;
+	private @Getter @Setter String jobInvention;
+	private @Getter @Setter String incomeTax;
+	private @Getter @Setter String inhabitantTax;
+	private @Getter @Setter String countryTax;
+	private @Getter @Setter String annuityPay;
+	private @Getter @Setter String publicEmployeePension;
+	private @Getter @Setter String militaryPension;
+	private @Getter @Setter String schoolEmployeePension;
+	private @Getter @Setter String officePension;
+	private @Getter @Setter String healthInsurance;
+	private @Getter @Setter String employmentPremium;
+	private @Getter @Setter String statutoryDonation;
+	private @Getter @Setter String religionIn;
+	private @Getter @Setter String religionOut;
+	private @Getter @Setter String nightPay;
+	private @Getter @Setter String cusNo;
+	private @Getter @Setter String etcPayTot;
+	private @Getter @Setter String taxcutStartYmd;
+	private @Getter @Setter String taxcutEndYmd;
+	private @Getter @Setter String taxcutRate100;
+	private @Getter @Setter String taxcutRate50;
+	private @Getter @Setter String taxcutRate70;
+	private @Getter @Setter String taxcutRate90;
+}

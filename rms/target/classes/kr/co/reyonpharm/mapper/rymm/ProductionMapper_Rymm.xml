@@ -1,0 +1,403 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.rymm.ProductionMapper_Rymm">
+	
+	<select id="selectContent" parameterType="ProductionInfo" resultType="ProductionInfo">
+		SELECT num, sabun, auth, content, emrg
+	    FROM 
+			RYMM.RYBCA01IT
+		WHERE TO_CHAR(SYSDATE, 'yymmdd') BETWEEN TO_CHAR(S_DATE, 'yymmdd') AND TO_CHAR(E_DATE, 'yymmdd')
+		ORDER BY emrg desc
+	</select>
+	
+	<insert id="insertContent" parameterType="ProductionInfo">
+		INSERT INTO RYMM.RYBCA01IT VALUES (
+			RYBCA01IT_SEQ.nextval,
+			#{sabun},
+			#{auth},
+			#{content},
+			#{emrg},
+			SYSDATE
+		)
+	</insert>
+	
+	<delete id="deleteContent" parameterType="ProductionInfo">
+		DELETE FROM RYMM.RYBCA01IT
+		WHERE num = #{num}
+	</delete>
+	
+	<select id="selectName" parameterType="ProductionInfo" resultType="ProductionInfo">
+		SELECT kname auth
+		FROM   RYHR.RYHZZ01MT
+		WHERE sabun like #{sabun}
+	</select>
+	
+	
+	
+	<sql id="selectProductionListWhere">
+		<if test="s_auth != null and s_auth != ''">
+			AND AUTH LIKE '%'||#{s_auth}||'%'
+		</if>
+		<if test="s_content != null and s_content != ''">
+			AND CONTENT LIKE '%'||#{s_content}||'%'
+		</if>
+		<if test="s_emrg != null and s_emrg != ''">
+			AND EMRG = #{s_emrg}
+		</if>
+		<if test="s_wDate != null and s_wDate != ''">
+			AND TO_CHAR(W_DATE,'YYYYMMDD') = REPLACE(#{s_wDate},'-','')
+		</if>
+	</sql>
+	
+	<select id="selectProductionListCount" parameterType="PageParam" resultType="int">
+		SELECT /* selectProductionListCount */
+			COUNT(1)
+	    FROM (
+	    	SELECT
+				NUM,
+				SABUN,
+				AUTH,
+				CONTENT,
+				EMRG,
+				W_DATE REG_DATE
+			FROM
+				RYMM.RYBCA01IT
+			WHERE 1=1
+				<include refid="selectProductionListWhere" />
+	    	) a
+	</select>
+	
+	<select id="selectProductionList" parameterType="PageParam" resultType="ProductionInfo">
+		SELECT /* selectProductionList */
+			b.RNUM,
+			b.NUM,
+			b.SABUN,
+			b.AUTH,
+			b.CONTENT,
+			b.EMRG,
+			TO_CHAR(b.W_DATE, 'YYYY-MM-DD') REG_DATE,
+			TO_CHAR(b.S_DATE, 'YYYY-MM-DD') SDATE,
+			TO_CHAR(b.E_DATE, 'YYYY-MM-DD') EDATE
+		FROM (
+		  SELECT
+		    ROWNUM RNUM,
+		    a.*
+		  FROM (
+		    SELECT
+				NUM,
+				SABUN,
+				AUTH,
+				CONTENT,
+				EMRG,
+				W_DATE,
+				S_DATE,
+				E_DATE
+			FROM
+				RYMM.RYBCA01IT
+			WHERE 1=1
+				<include refid="selectProductionListWhere" />
+			ORDER BY NUM DESC
+		  ) a
+		) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<select id="selectProduction" parameterType="ProductionInfo" resultType="ProductionInfo">
+		SELECT /* selectProduction */
+			NUM,
+			SABUN,
+			AUTH,
+			CONTENT,
+			EMRG,
+			TO_CHAR(W_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			TO_CHAR(S_DATE, 'YYYY-MM-DD') SDATE,
+			TO_CHAR(E_DATE, 'YYYY-MM-DD') EDATE
+		FROM
+			RYMM.RYBCA01IT
+		WHERE 1=1
+			AND NUM = #{num}
+	</select>
+	
+	<insert id="insertProduction" parameterType="ProductionInfo">
+		INSERT /* insertProduction */
+		INTO RYMM.RYBCA01IT (
+			NUM,
+			SABUN,
+			AUTH,
+			CONTENT,
+			EMRG,
+			W_DATE,
+			S_DATE,
+			E_DATE
+		) VALUES (
+			RYBCA01IT_SEQ.NEXTVAL,
+			#{sabun},
+			#{auth},
+			#{content},
+			#{emrg},
+			SYSDATE,
+			TO_DATE(#{sdate}, 'yyyy-mm-dd'),
+			TO_DATE(#{edate}, 'yyyy-mm-dd')
+		)
+	</insert>
+	
+	<update id="updateProduction" parameterType="ProductionInfo">
+		UPDATE /* updateProduction */
+			RYMM.RYBCA01IT
+		SET 
+			SABUN = #{sabun}, 
+			AUTH = #{auth},
+			CONTENT = #{content},
+			EMRG = #{emrg},
+			S_DATE = #{sdate},
+			E_DATE = #{edate} 
+		WHERE NUM = #{num} 
+	</update>
+	
+	<delete id="deleteProduction" parameterType="ProductionInfo">
+		DELETE /* deleteProduction */
+		FROM RYMM.RYBCA01IT
+		WHERE NUM = #{num} 
+	</delete>
+	
+	<select id="selectMaterialTestRecCount" parameterType="ProductionInfo">
+		Select Count(*)  
+		From (Select Max(Decode(C.detail_name,'코드',C.detail_value,'')) code, A.if_name, Max(Decode(C.detail_name,'품목',C.detail_value,'')) jpm_nm,
+               Max(Decode(C.detail_name,'제조번호',C.detail_value,'')) lot_no,                                                                 
+               Max(Decode(C.detail_name,'의뢰량',C.detail_value,'')) req_qty, Max(Decode(C.detail_name,'의뢰단위',C.detail_value,'')) danwi,   
+               Max(Decode(C.detail_name,'공정',C.detail_value,'')) gongjung,                                                                   
+               Max(Decode(C.detail_name,'의뢰일자',Substr(Replace(Replace(C.detail_value,'-',''),'.',''),1,8),'')) req_date,                   
+               Nvl(Max(Decode(C.detail_name,'입고구분',C.detail_value,'')),0) ip_gbn                                                           
+          	   From RYQC.REQ_IF_MASTER A, RYQC.REQ_IF_LOG B, RYQC.REQ_IF_DETAIL C                                                                   
+               Where A.if_out_datetime Is Null                                                                                                       
+               And substr(A.if_name,1,4) = '구매의뢰'                                                                                              
+               And A.if_master_id = B.if_master_id                                                                                                 
+               And A.if_master_id = C.if_master_id                                                                                                 
+               Group By A.if_name, A.if_master_id) A, RYMM.RYBEB02MT B                                                                               
+ 		 Where A.code = B.ry_no(+)
+	</select>
+	
+	<select id="selectDelayCount" parameterType="ProductionInfo" resultType="int">
+		<![CDATA[
+		Select Count('x') as count
+		From RYMM.RYBPP02IT
+		Where Nvl(status,'00') In ('30','50')
+			And (Nvl(per_gbn,'0') = '0' And Nvl(pv_gbn,'0') = '0' And Nvl(hold_gbn,'0') = '0')
+			And jpm_cd In (Select jpm_cd
+						   From RYACC.RYAZZ02MT
+						   Where use_gbn = 'Y' And sale_use_gbn = 'Y'
+						       And jpm_gbn In ('11'))
+			And due_app_date < To_Char(sysdate,'YYYYMMDD')
+		]]>
+	</select>
+	
+	<select id="selectStockCount" parameterType="ProductionInfo" resultType="int">
+	<![CDATA[
+		select count('x') from (
+			Select A.jpm_nm, A.gyugk, Decode(Nvl(B.avg_sale_qty,0),0,0, Round((Nvl(C.jaego_qty,0)-Nvl(D.jaego_qty6,0)-Nvl(SA.ORDER_QTY,0)-Nvl(SS.SORDER_QTY,0)-Nvl(SB.RYDLV14IT_QTY,0)-Nvl(SH.STAY_QTY,0)-Nvl(A.mgt_stock,0))/Nvl(B.avg_sale_qty,0),1)) wolsu
+			From RYACC.RYAZZ02MT A, (Select jpm_cd, Round(NVL(sum(qty+hqty),0)/3) avg_sale_qty --직전 3개월 평균판매
+			From RYSD.RYSDO02MT
+			Where sale_date Between to_char(add_months(sysdate,-3),'YYYYMM')||'01'
+			And to_char(last_day(add_months(sysdate,-1)),'YYYYMMDD')
+			And comp_cd = '20'
+			And ipcl_cd <> 'P97'
+			And chul_status = '2'
+			And confirm_status = 'AA'
+			Group By jpm_cd) B,
+			(Select A.jpm_cd, Sum(jaego_qty) jaego_qty
+			From RYSD.RYDLV05IT A, RYACC.RYAZZ02MT B
+			Where A.yymm = To_Char(sysdate,'YYYYMM')
+			And A.st_cd Like 'A%'
+			And A.ipcl_cd = '100'
+			And A.jpm_cd = B.jpm_cd
+			And B.jpm_gbn In ('11','12')
+			And A.jaego_qty <> 0
+			Group By A.jpm_cd
+			Union All
+			Select jpm_cd, Sum(gimal_qty) jaego_qty
+			From RYPP.RYPGO01IT
+			Where gimal_qty <> 0
+			Group By jpm_cd) C,
+			(SELECT A.JPM_CD, SUM(A.JAEGO_QTY) jaego_qty6
+			FROM (SELECT A.JPM_CD, A.LOT_NO, A.WH_CD, Z.YU_DATE, A.JAEGO_QTY
+			FROM (SELECT A.JPM_CD, A.LOT_NO, A.WH_CD, SUM(JAEGO_QTY) JAEGO_QTY
+			FROM RYSD.RYDLV05IT A
+			Where 1 = 1
+			AND A.YYMM = To_Char(Sysdate,'YYYYMM')
+			AND A.ST_CD IN ('A1','A2')
+			AND A.IPCL_CD = '100'
+			GROUP BY A.JPM_CD, A.LOT_NO, A.WH_CD) A, RYACC.RYAZZ02MT B,
+			---------------------------------------------------------------
+			(SELECT JPM_CD, LOT_NO, YU_DATE FROM RYSD.RYDLVLOT) Z
+			Where 1 = 1
+			----------------------------------
+			AND A.JPM_CD = B.JPM_CD
+			AND A.Jpm_cd = Z.Jpm_cd
+			AND A.Lot_no = Z.Lot_no
+			AND Z.YU_DATE <= (CASE WHEN LAST_DAY(TO_DATE(To_Char(sysdate,'YYYYMM')||'01','YYYYMMDD')) >= TO_DATE('20190508','YYYYMMDD') THEN TO_CHAR(ADD_MONTHS(TO_DATE('20190508','YYYYMMDD'),TO_NUMBER(NVL(B.VALID_MONTH,0))),'YYYYMMDD')
+			ELSE TO_CHAR(ADD_MONTHS(LAST_DAY(TO_DATE(To_Char(sysdate,'YYYYMM')||'01','YYYYMMDD')),TO_NUMBER(NVL(B.VALID_MONTH,0))),'YYYYMMDD')
+			END) -- 조회월말일 >= 판매마감일자 THEN 판매마감일자, ELSE 조회월말일, -- 유효기간 : 판매마감일자 + 유효개월
+			) A
+			GROUP BY A.JPM_CD) D,
+			(SELECT jpm_cd, Sum(qty+hqty) order_qty
+			From RYSD.RYSDO02MT --주문진행수량(Chul_status = Null, 결재구분 <> 부결)
+			WHERE COMP_CD = '20'
+			AND Jumn_Date >= To_Char(Sysdate,'YYYYMM')||'00'
+			AND Jumn_Date <= To_Char(Sysdate,'YYYYMM')||'31'
+			AND Chul_status IS NULL
+			AND (Chul_Jumn_gbn <> '10' AND Chul_Jumn_gbn <> '11' AND Chul_Jumn_gbn <> '19' ) -- 출하안됨
+			AND (Chul_Jumn_gbn <> '03') -- 취소주문서 제외
+			AND IPCL_CD NOT IN('P95','P96','P97')
+			AND SUBSTR(CONFIRM_STATUS,2,1) not in ( 'X', '2' )
+			AND jumn_gbn not in('31','32') -- 이기, 단가정정 매출분 반영안함
+			GROUP BY Jpm_cd) SA,
+			-- 샘플 주문진행수량 ( Chul_status = NULL , 결재구분 <> 부결)
+			-- 샘플구분 11:일반 21:판촉비 ( 31:차용정리 41:소재고이동 제외 )
+			(SELECT Jpm_cd, SUM(QTY) SORDER_QTY
+			From RYSD.RYSDO03MT
+			WHERE COMP_CD = '20'
+			AND Jumn_Date >= To_Char(Sysdate,'YYYYMM')||'00'
+			AND Jumn_Date <= To_Char(Sysdate,'YYYYMM')||'31'
+			AND Jumn_gbn IN ( '11','21')
+			AND Chul_status IS NULL
+			AND IPCL_CD NOT IN('P95','P96','P97')
+			AND SUBSTR(CONFIRM_STATUS,2,1) not in ( 'X', '2' )
+			GROUP BY Jpm_cd) SS,
+			(SELECT JPM_CD, SUM(QTY) RYDLV14IT_QTY
+			From RYSD.RYDLV14IT -- 반제품매출보류 수량
+			WHERE OUT_DATE >= TO_CHAR(ADD_MONTHS(TO_DATE(To_Char(Sysdate,'YYYYMMDD'),'YYYYMMDD'),-6),'YYYYMMDD') -- 주문일기준 6개월전
+			AND NVL(STATUS,'00') <> '99' -- 매출확정전
+			GROUP BY JPM_CD) SB,
+			-- 출고보류수량 (IPCL_CD = 내수/샘플/수출, DC_GBN = 정상출고+ 샘플)
+			(SELECT Jpm_cd, SUM(Remain_qty) STAY_QTY
+			From RYSD.RYDLV02IT
+			Where IPCL_CD IN ('P11','P21','P12','P14','P20','P19')
+			AND NVL(Remain_qty,0) > 0
+			AND OUT_Date >= To_Char(Sysdate,'YYYYMM')||'00' -- 20151127 지헌일 : 재고조회 속도향상
+			GROUP BY Jpm_cd) SH
+			Where (A.use_gbn = 'Y' And A.sale_use_gbn = 'Y')
+			And A.jpm_gbn In ('11')
+			And Nvl(A.ex_gbn,'0') = '0'
+			And A.jpm_cd = B.jpm_cd(+)
+			And A.jpm_cd = C.jpm_cd(+)
+			And A.jpm_cd = D.jpm_cd(+)
+			And A.jpm_cd = SA.jpm_cd(+)
+			And A.jpm_cd = SS.jpm_cd(+)
+			And A.jpm_cd = SB.jpm_cd(+)
+			And A.jpm_cd = SH.jpm_cd(+)
+			And Nvl(B.avg_sale_qty,0) <> 0
+			And Decode(Nvl(B.avg_sale_qty,0),0,0, Round((Nvl(C.jaego_qty,0)-Nvl(D.jaego_qty6,0)-Nvl(SA.ORDER_QTY,0)-Nvl(SS.SORDER_QTY,0)-Nvl(SB.RYDLV14IT_QTY,0)-Nvl(SH.STAY_QTY,0)-Nvl(A.mgt_stock,0))/Nvl(B.avg_sale_qty,0),1)) < 1
+			Order By A.jpm_nm, A.CATON_QTY, wolsu)
+	]]>
+	</select>
+	
+	<select id="selectStock" parameterType="ProductionInfo" resultType="ProductionInfo">
+	<![CDATA[
+		Select A.jpm_nm as jpmnm, A.gyugk as gyugk,
+		Decode(Nvl(B.avg_sale_qty,0),0,0, Round((Nvl(C.jaego_qty,0)-Nvl(D.jaego_qty6,0)-Nvl(SA.ORDER_QTY,0)-Nvl(SS.SORDER_QTY,0)-Nvl(SB.RYDLV14IT_QTY,0)-Nvl(SH.STAY_QTY,0)-Nvl(A.mgt_stock,0))/Nvl(B.avg_sale_qty,0),1)) wolsu,
+		Nvl(IP.nap_mmdd, '-') as napdate
+		From RYACC.RYAZZ02MT A, (Select jpm_cd, Round(NVL(sum(qty+hqty),0)/3) avg_sale_qty --직전 3개월 평균판매
+		From RYSD.RYSDO02MT
+		Where sale_date Between to_char(add_months(sysdate,-3),'YYYYMM')||'01'
+		And to_char(last_day(add_months(sysdate,-1)),'YYYYMMDD')
+		And comp_cd = '20'
+		And ipcl_cd <> 'P97'
+		And chul_status = '2'
+		And confirm_status = 'AA'
+		Group By jpm_cd) B,
+		(Select A.jpm_cd, Sum(jaego_qty) jaego_qty
+		From RYSD.RYDLV05IT A, RYACC.RYAZZ02MT B
+		Where A.yymm = To_Char(sysdate,'YYYYMM')
+		And A.st_cd Like 'A%'
+		And A.ipcl_cd = '100'
+		And A.jpm_cd = B.jpm_cd
+		And B.jpm_gbn In ('11','12')
+		And A.jaego_qty <> 0
+		Group By A.jpm_cd
+		Union All
+		Select jpm_cd, Sum(gimal_qty) jaego_qty
+		From RYPP.RYPGO01IT
+		Where gimal_qty <> 0
+		Group By jpm_cd) C,
+		(SELECT A.JPM_CD, SUM(A.JAEGO_QTY) jaego_qty6
+		FROM (SELECT A.JPM_CD, A.LOT_NO, A.WH_CD, Z.YU_DATE, A.JAEGO_QTY
+		FROM (SELECT A.JPM_CD, A.LOT_NO, A.WH_CD, SUM(JAEGO_QTY) JAEGO_QTY
+		FROM RYSD.RYDLV05IT A
+		Where 1 = 1
+		AND A.YYMM = To_Char(Sysdate,'YYYYMM')
+		AND A.ST_CD IN ('A1','A2')
+		AND A.IPCL_CD = '100'
+		GROUP BY A.JPM_CD, A.LOT_NO, A.WH_CD) A, RYACC.RYAZZ02MT B,
+		---------------------------------------------------------------
+		(SELECT JPM_CD, LOT_NO, YU_DATE FROM RYSD.RYDLVLOT) Z
+		Where 1 = 1
+		----------------------------------
+		AND A.JPM_CD = B.JPM_CD
+		AND A.Jpm_cd = Z.Jpm_cd
+		AND A.Lot_no = Z.Lot_no
+		AND Z.YU_DATE <= (CASE WHEN LAST_DAY(TO_DATE(To_Char(sysdate,'YYYYMM')||'01','YYYYMMDD')) >= TO_DATE('20190508','YYYYMMDD') THEN TO_CHAR(ADD_MONTHS(TO_DATE('20190508','YYYYMMDD'),TO_NUMBER(NVL(B.VALID_MONTH,0))),'YYYYMMDD')
+		ELSE TO_CHAR(ADD_MONTHS(LAST_DAY(TO_DATE(To_Char(sysdate,'YYYYMM')||'01','YYYYMMDD')),TO_NUMBER(NVL(B.VALID_MONTH,0))),'YYYYMMDD')
+		END) -- 조회월말일 >= 판매마감일자 THEN 판매마감일자, ELSE 조회월말일, -- 유효기간 : 판매마감일자 + 유효개월
+		) A
+		GROUP BY A.JPM_CD) D,
+		(SELECT jpm_cd, Sum(qty+hqty) order_qty
+		From RYSD.RYSDO02MT --주문진행수량(Chul_status = Null, 결재구분 <> 부결)
+		WHERE COMP_CD = '20'
+		AND Jumn_Date >= To_Char(Sysdate,'YYYYMM')||'00'
+		AND Jumn_Date <= To_Char(Sysdate,'YYYYMM')||'31'
+		AND Chul_status IS NULL
+		AND (Chul_Jumn_gbn <> '10' AND Chul_Jumn_gbn <> '11' AND Chul_Jumn_gbn <> '19' ) -- 출하안됨
+		AND (Chul_Jumn_gbn <> '03') -- 취소주문서 제외
+		AND IPCL_CD NOT IN('P95','P96','P97')
+		AND SUBSTR(CONFIRM_STATUS,2,1) not in ( 'X', '2' )
+		AND jumn_gbn not in('31','32') -- 이기, 단가정정 매출분 반영안함
+		GROUP BY Jpm_cd) SA,
+		-- 샘플 주문진행수량 ( Chul_status = NULL , 결재구분 <> 부결)
+		-- 샘플구분 11:일반 21:판촉비 ( 31:차용정리 41:소재고이동 제외 )
+		(SELECT Jpm_cd, SUM(QTY) SORDER_QTY
+		From RYSD.RYSDO03MT
+		WHERE COMP_CD = '20'
+		AND Jumn_Date >= To_Char(Sysdate,'YYYYMM')||'00'
+		AND Jumn_Date <= To_Char(Sysdate,'YYYYMM')||'31'
+		AND Jumn_gbn IN ( '11','21')
+		AND Chul_status IS NULL
+		AND IPCL_CD NOT IN('P95','P96','P97')
+		AND SUBSTR(CONFIRM_STATUS,2,1) not in ( 'X', '2' )
+		GROUP BY Jpm_cd) SS,
+		(SELECT JPM_CD, SUM(QTY) RYDLV14IT_QTY
+		From RYSD.RYDLV14IT -- 반제품매출보류 수량
+		WHERE OUT_DATE >= TO_CHAR(ADD_MONTHS(TO_DATE(To_Char(Sysdate,'YYYYMMDD'),'YYYYMMDD'),-6),'YYYYMMDD') -- 주문일기준 6개월전
+		AND NVL(STATUS,'00') <> '99' -- 매출확정전
+		GROUP BY JPM_CD) SB,
+		-- 출고보류수량 (IPCL_CD = 내수/샘플/수출, DC_GBN = 정상출고+ 샘플)
+		(SELECT Jpm_cd, SUM(Remain_qty) STAY_QTY
+		From RYSD.RYDLV02IT
+		Where IPCL_CD IN ('P11','P21','P12','P14','P20','P19')
+		AND NVL(Remain_qty,0) > 0
+		AND OUT_Date >= To_Char(Sysdate,'YYYYMM')||'00' -- 20151127 지헌일 : 재고조회 속도향상
+		GROUP BY Jpm_cd) SH,
+		(Select jpm_cd, LISTAGG(lot_no||' ('||p_mmdd||')',', ') WITHIN GROUP (ORDER BY lot_no) as nap_mmdd
+		From (Select A.jpm_cd, A.lot_no, B.p_mmdd, ROW_NUMBER() OVER(PARTITION BY A.jpm_cd ORDER BY A.lot_no ASC, A.jpm_cd, A.lot_no) sn
+		From RYMM.RYBPP02IT A, RYMM.RYBPP03IT B
+		Where Nvl(A.status,'00') <> '99'
+		And A.seq_no = B.seq_no(+)
+		And B.p_mmdd Is Not Null)
+		Where sn <= 2
+		Group By jpm_cd) IP
+		Where (A.use_gbn = 'Y' And A.sale_use_gbn = 'Y')
+		And A.jpm_gbn In ('11')
+		And Nvl(A.ex_gbn,'0') = '0'
+		And A.jpm_cd = B.jpm_cd(+)
+		And A.jpm_cd = C.jpm_cd(+)
+		And A.jpm_cd = D.jpm_cd(+)
+		And A.jpm_cd = SA.jpm_cd(+)
+		And A.jpm_cd = SS.jpm_cd(+)
+		And A.jpm_cd = SB.jpm_cd(+)
+		And A.jpm_cd = SH.jpm_cd(+)
+		And A.jpm_cd = IP.jpm_cd(+)
+		And Nvl(B.avg_sale_qty,0) <> 0
+		And Decode(Nvl(B.avg_sale_qty,0),0,0, Round((Nvl(C.jaego_qty,0)-Nvl(D.jaego_qty6,0)-Nvl(SA.ORDER_QTY,0)-Nvl(SS.SORDER_QTY,0)-Nvl(SB.RYDLV14IT_QTY,0)-Nvl(SH.STAY_QTY,0)-Nvl(A.mgt_stock,0))/Nvl(B.avg_sale_qty,0),1)) < 1
+		Order By A.jpm_nm, A.CATON_QTY, wolsu
+	]]>
+	</select>
+</mapper>

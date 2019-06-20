@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans 
+	xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+	http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-4.2.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.2.xsd">
+
+	<context:component-scan base-package="kr.co.reyonpharm" use-default-filters="false">
+		<context:include-filter expression="org.springframework.stereotype.Service" type="annotation" />
+		<context:include-filter expression="org.springframework.stereotype.Repository" type="annotation" />
+	</context:component-scan>
+
+	<!-- 정적인 리소스 보안 적용 패스 -->
+	<http pattern="/*.ico" security="none"/>
+	<http pattern="/js/**/*" security="none"/>
+	<http pattern="/img/**/*" security="none"/>
+	<http pattern="/css/**/*" security="none"/>
+	<http pattern="/fonts/**/*" security="none"/>
+	
+	<http auto-config="true" entry-point-ref="customAuthenticationEntryPoint">
+		<!-- 비 로그인 (세션만료 된 상태에서 접근) 시 응답 처리 -->
+		<csrf disabled="true"/>
+
+		<!-- 루트 경로, /main.do로 점프처리 페이지 -->
+		<intercept-url pattern="/" access="permitAll" />
+		
+		<!-- MainController -->
+		<!-- 로그인 관련 전체 접근 가능 -->
+		<intercept-url pattern="/admin.do" access="permitAll" />
+		<intercept-url pattern="/login.do" access="permitAll" />
+		<intercept-url pattern="/logout.do" access="permitAll" />
+		<intercept-url pattern="/loginCheckAjax.json" access="permitAll" />
+		<intercept-url pattern="/concurrentSessionExceed.do" access="permitAll" />
+		<intercept-url pattern="/checkPassPcAjax.json" access="permitAll" />
+		
+		<!-- SSOController -->
+		<intercept-url pattern="/sso/auth.do" access="permitAll" />
+		<intercept-url pattern="/sso/access.do" access="permitAll" />
+		
+		<!-- 메인 -->
+		<intercept-url pattern="/main.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/myPage.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/toDo.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/takeOver.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/takeOverAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/takeOverModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		
+		<!-- 에러페이지 전체 접근 가능 -->
+		<intercept-url pattern="/error400.do" access="permitAll" />
+		<intercept-url pattern="/error401.do" access="permitAll" />
+		<intercept-url pattern="/error403.do" access="permitAll" />
+		<intercept-url pattern="/error404.do" access="permitAll" />
+		<intercept-url pattern="/error405.do" access="permitAll" />
+		<intercept-url pattern="/error406.do" access="permitAll" />
+		<intercept-url pattern="/error408.do" access="permitAll" />
+		<intercept-url pattern="/error409.do" access="permitAll" />
+		<intercept-url pattern="/error412.do" access="permitAll" />
+		<intercept-url pattern="/error500.do" access="permitAll" />
+		<intercept-url pattern="/error501.do" access="permitAll" />
+		<intercept-url pattern="/error502.do" access="permitAll" />
+		<intercept-url pattern="/error503.do" access="permitAll" />
+		
+		<!-- CommonController -->
+		<!-- 공통 기능 -->
+		<intercept-url pattern="/common/getTotalUserListAjax.json" access="permitAll" />
+		<intercept-url pattern="/common/getTotalDeptListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/common/getWeatherAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/common/getActiveProjectListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/common/getActiveTicketListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/common/getActiveVisitorListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/common/getCommonCodeListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/common/getTimetableListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/common/getGnbTimetableListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/common/getTodoListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/common/getMainScheduleListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/common/changeMeetingTypeAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		
+		<!-- ProjectController -->
+		<!-- 프로젝트 관리 -->
+		<intercept-url pattern="/project/projectList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/project/projectView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/project/projectAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/project/projectModify.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/project/projectAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/project/projectModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/project/projectDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		
+		<!-- MeetingController -->
+		<!-- 회의 관리 -->
+		<intercept-url pattern="/meeting/meetingList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/meeting/meetingView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/meeting/meetingAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/meeting/meetingModify.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/meeting/meetingAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/meeting/meetingModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/meeting/meetingDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/meeting/meetingResultAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/meeting/meetingResultModify.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/meeting/meetingResultAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/meeting/meetingResultModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/meeting/meetingResultDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/meeting/meetingResultConfirmAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/meeting/meetingFileDownload.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/meeting/meetingExcelDownload.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		
+		<!-- VisitorController -->
+		<!-- 방문자 관리 -->
+		<intercept-url pattern="/visitor/visitorList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/visitor/visitorView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/visitor/visitorAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/visitor/visitorModify.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/visitor/visitorAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/visitor/visitorModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/visitor/visitorDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/visitor/visitorResultAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/visitor/visitorResultModify.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/visitor/visitorResultAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/visitor/visitorResultModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/visitor/visitorResultDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/visitor/visitorResultConfirmAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/visitor/visitorFileDownload.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/visitor/visitorExcelDownload.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		
+		<!-- TicketController -->
+		<!-- 주차권 관리 -->
+		<intercept-url pattern="/ticket/ticketList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/ticket/ticketView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/ticket/ticketAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/ticket/ticketModify.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/ticket/ticketAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/ticket/ticketModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/ticket/ticketDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		<intercept-url pattern="/ticket/ticketConfirmAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_JINCHEONADMIN','ROLE_JINCHEONMGR','ROLE_ITT','ROLE_CHONGMU','ROLE_SALESMGR','ROLE_INSA','ROLE_BPM','ROLE_USER')" />
+		
+		<!-- ComingController -->
+		<!-- 출입자 관리 -->
+		<intercept-url pattern="/coming/comingList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/coming/comingView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/coming/comingAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/coming/comingModify.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/coming/comingAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/coming/comingModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/coming/comingDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/coming/comingStatistics.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/coming/comingGate.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/coming/comingExcelDownload.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		
+		<!-- RealestateController -->
+		<!-- 부동산 계약 관리 -->
+		<intercept-url pattern="/realestate/realestateList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/realestate/realestateView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/realestate/realestateAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/realestate/realestateModify.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/realestate/realestateStatistics.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/realestate/realestateStatisticsAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/realestate/realestateAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/realestate/realestateModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/realestate/realestateDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/realestate/realestateFileDownload.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/realestate/realestateExcelDownload.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		
+		<!-- VehicleController -->
+		<!-- 법인 차량 관리 -->
+		<intercept-url pattern="/vehicle/vehicleList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/vehicle/vehicleView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/vehicle/vehicleAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/vehicle/vehicleModify.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/vehicle/vehicleStatistics.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/vehicle/vehicleStatisticsAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/vehicle/vehicleAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/vehicle/vehicleModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/vehicle/vehicleDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/vehicle/vehicleFileDownload.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		<intercept-url pattern="/vehicle/vehicleExcelDownload.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU')" />
+		
+		<!-- SfeController -->
+		<!-- SFE ADMIN 관리 -->
+		<intercept-url pattern="/sfe/salesDeptAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesUserAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesAccountAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesRouteActivity.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesRouteActivityUser.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesRouteActivityRoute.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesRouteChange.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesRouteChangeRoute.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesRouteChangePosition.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesRouteChangeAccount.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesTrendList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesTrendListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesAccountList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesAccountListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesPointList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesPointListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesActivityList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesProfitList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		<intercept-url pattern="/sfe/salesProfitListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_SALESMGR')" />
+		
+		<!-- ScheduleController -->
+		<!-- 일정 관리 -->
+		<intercept-url pattern="/schedule/scheduleList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_BPM')" />
+		<intercept-url pattern="/schedule/scheduleView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_BPM')" />
+		<intercept-url pattern="/schedule/scheduleAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_BPM')" />
+		<intercept-url pattern="/schedule/scheduleModify.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_BPM')" />
+		<intercept-url pattern="/schedule/scheduleAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_BPM')" />
+		<intercept-url pattern="/schedule/scheduleModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_BPM')" />
+		<intercept-url pattern="/schedule/scheduleDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_BPM')" />
+		<intercept-url pattern="/schedule/schedulePopup.do" access="permitAll" />
+		<intercept-url pattern="/schedule/getScheduleTableListAjax.json" access="permitAll" />
+		
+		<!-- PhoneController -->
+		<!-- 내선번호 관리 -->
+		<intercept-url pattern="/phone/phonenumberList.do" access="permitAll" />
+		<intercept-url pattern="/phone/phoneExcelDownload.do" access="permitAll" />
+		<intercept-url pattern="/phone/phonenumberBook.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU','ROLE_JINCHEONMGR')" />
+		<intercept-url pattern="/phone/phonenumberOrder.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU','ROLE_JINCHEONMGR')" />
+		<intercept-url pattern="/phone/phonenumberGetAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU','ROLE_JINCHEONMGR')" />
+		<intercept-url pattern="/phone/phonenumberAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU','ROLE_JINCHEONMGR')" />
+		<intercept-url pattern="/phone/phonenumberModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU','ROLE_JINCHEONMGR')" />
+		<intercept-url pattern="/phone/phonenumberDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU','ROLE_JINCHEONMGR')" />
+		<intercept-url pattern="/phone/phonenumberOrderModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_CHONGMU','ROLE_JINCHEONMGR')" />
+		
+		<!-- PunctualityController -->
+		<!-- 진천공장 근태 조회 -->
+		<intercept-url pattern="/punctuality/punctualityList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_JINCHEONMGR')" />
+		<intercept-url pattern="/punctuality/getPunctualityListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_JINCHEONMGR')" />
+		<intercept-url pattern="/punctuality/punctualityExcelDownload.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_JINCHEONMGR')" />
+		
+		<!-- ProductionController -->
+		<!-- 진천공장 알림 관리 -->
+		<intercept-url pattern="/production/productionList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_JINCHEONMGR')" />
+		<intercept-url pattern="/production/productionView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_JINCHEONMGR')" />
+		<intercept-url pattern="/production/productionAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_JINCHEONMGR')" />
+		<intercept-url pattern="/production/productionModify.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_JINCHEONMGR')" />
+		<intercept-url pattern="/production/productionAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_JINCHEONMGR')" />
+		<intercept-url pattern="/production/productionModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_JINCHEONMGR')" />
+		<intercept-url pattern="/production/productionDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT','ROLE_JINCHEONMGR')" />
+		
+		<!-- MetarialController -->
+		<!-- 재고자산 통제 관리 -->
+		<intercept-url pattern="/metarial/checkList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/metarial/checkView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/metarial/checkAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/metarial/checkAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/metarial/checkDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/metarial/metarialSelect.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/metarial/BOMSelect.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/metarial/metarialFileDownload.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/metarial/checkConfirm.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/metarial/confirmAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/metarial/check.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		
+		
+		<!-- SettlementController -->
+		<!-- 연말정산 관리 -->
+		<intercept-url pattern="/settlement/downloadMasterData.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/downloadExcelMasterData.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/uploadDeclaration.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/getDeclarationListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/declarationDownload.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/declarationDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/declarationUploadAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/analyzeDeclaration.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/getDeclarationDBListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/analyzeDeclarationAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/uploadSpecification.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/getSpecificationListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/specificationDownload.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/specificationDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/specificationUploadAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/analyzeSpecification.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/getSpecificationDBListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/settlement/analyzeSpecificationAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		
+		<!-- AppController -->
+		<!-- PC 제어 프로그램 -->
+		<intercept-url pattern="/app/reyonApp.json" access="permitAll" />
+		<intercept-url pattern="/app/pcOnOffList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		<intercept-url pattern="/app/pcMessageList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		<intercept-url pattern="/app/pcMessageAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		<intercept-url pattern="/app/pcMessageAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		<intercept-url pattern="/app/pcMessageDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		<intercept-url pattern="/app/pcReleaseList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		<intercept-url pattern="/app/pcReleaseView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		<intercept-url pattern="/app/pcReleaseAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		<intercept-url pattern="/app/pcReleaseAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		<intercept-url pattern="/app/pcReleaseModify.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		<intercept-url pattern="/app/pcReleaseModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		<intercept-url pattern="/app/pcReleaseConfirm.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		<intercept-url pattern="/app/getPcReleaseConfirmAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		<intercept-url pattern="/app/pcReleaseConfirmAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		<intercept-url pattern="/app/pcReleaseDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT')" />
+		
+		<!-- IttController -->
+		<!-- 정보관리팀 -->
+		<intercept-url pattern="/itt/manualMigrationProduct.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/getMigrationProductAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/manualMigrationProductAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/commonCodeList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/commonCodeView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/commonCodeAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/commonCodeAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/commonCodeModify.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/commonCodeModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/commonCodeDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/groupwareExtList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/groupwareExtAdd.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/groupwareExtAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/groupwareExtModify.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/groupwareExtModifyAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/groupwareExtView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/groupwareExtDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+		<intercept-url pattern="/itt/groupwareChit.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT')" />
+				
+		<intercept-url pattern="/Metarial/checkList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_SUPERUSER','ROLE_ITT',  'ROLE_JINCHEONMGR')" />
+		
+		<!-- 개발자 모드 -->
+		<intercept-url pattern="/dev/alarmList.do" access="hasAnyRole('ROLE_ADMIN')" />
+		<intercept-url pattern="/dev/getAlarmHistoryListAjax.json" access="hasAnyRole('ROLE_ADMIN')" />
+		<intercept-url pattern="/dev/getAlarmUserListAjax.json" access="hasAnyRole('ROLE_ADMIN')" />
+		<intercept-url pattern="/dev/alarmAddAjax.json" access="hasAnyRole('ROLE_ADMIN')" />
+		<intercept-url pattern="/dev/alarmDeleteAjax.json" access="hasAnyRole('ROLE_ADMIN')" />
+		<intercept-url pattern="/dev/photoView.do" access="hasAnyRole('ROLE_ADMIN')" />
+		<intercept-url pattern="/dev/userPhotoView.do" access="hasAnyRole('ROLE_ADMIN')" />
+
+		<!-- 명시하지 않은 나머지 페이지는 접근 가능-->
+		<intercept-url pattern="/**" access="permitAll" /> 
+
+		<form-login
+			login-page="/login.do"
+			username-parameter="userId" 
+			password-parameter="userPwd"
+			login-processing-url="/loginAjax.json"
+			default-target-url="/main.do"
+			authentication-failure-url="/login.do"
+			always-use-default-target="true"
+			authentication-success-handler-ref="customAuthenticationSuccessHandler"
+			authentication-failure-handler-ref="customAuthenticationFailureHandler"
+		/>
+	
+		<!-- 동시 접속 제한 -->
+		<session-management>
+			  <concurrency-control max-sessions="1" expired-url="/concurrentSessionExceed.do" />
+		</session-management>
+		
+		<!-- 로그아웃 -->
+		<logout
+		invalidate-session="true"
+		logout-success-url="/login.do"
+		logout-url="/logout.do" /> 
+		
+		<!-- 권한 없는 페이지 접근 시 응답 처리 -->
+		<access-denied-handler ref="accessDenied"/>
+		
+		<headers>
+			<frame-options disabled="true"></frame-options>
+		</headers>
+	</http>
+
+	<!-- 기본적인 로그인 인증 처리 -->
+	<beans:bean id="customAuthenticationProvider" class="kr.co.reyonpharm.security.CustomAuthenticationProvider" />
+	<authentication-manager alias="authenticationManager">
+		<authentication-provider ref="customAuthenticationProvider" />
+    </authentication-manager>
+
+	<!-- 로그인 성공 시 응답(Ajax 포함) 처리 -->
+	<beans:bean id="customAuthenticationSuccessHandler" class="kr.co.reyonpharm.security.CustomAuthenticationSuccessHandler" />
+     
+	<!-- 로그인 실패 시 응답(Ajax 포함) 처리-->
+	<beans:bean id="customAuthenticationFailureHandler" class="kr.co.reyonpharm.security.CustomAuthenticationFailureHandler" />
+ 
+ 	<!-- 로그인 상태에서 권한 없는 페이지 접근 시 응답(Ajax 포함) 처리 -->
+	<beans:bean id="accessDenied" class="kr.co.reyonpharm.security.CustomAccessDeniedHandler" />
+
+ 	<!-- 비 로그인(세션 만료) 상태에서 로그인이 필요한 페이지 접근 시 응답(Ajax 포함) 처리 -->
+	<beans:bean id="customAuthenticationEntryPoint" class="kr.co.reyonpharm.security.CustomAuthenticationEntryPoint" />
+	
+</beans:beans>

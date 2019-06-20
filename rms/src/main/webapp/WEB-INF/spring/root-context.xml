@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:cache="http://www.springframework.org/schema/cache"
+	xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/cache http://www.springframework.org/schema/cache/spring-cache.xsd
+		http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+	
+	<context:annotation-config />
+		
+	<!-- Properties start -->
+	<bean id="configProp" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+		<property name="fileEncoding" value="UTF-8"/>
+	    <property name="locations">
+	        <list>
+	            <value>classpath:config/${serverType}.properties</value>
+	        </list>
+	    </property>
+	</bean>
+	<!-- Make static method -->
+	<bean id="force-init" class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="staticMethod" value="kr.co.reyonpharm.util.Constants.setConfigProp" />
+		<property name="arguments">
+			<list>
+				<ref bean="configProp" />
+			</list>
+		</property>
+	</bean>
+	<bean id="constants" class="kr.co.reyonpharm.util.Constants" depends-on="force-init"/>
+	<!-- Properties end -->
+	
+    <!-- Transaction -->
+	<tx:annotation-driven proxy-target-class="true" />
+    
+    <!-- RYHR DB -->
+	<bean id="ryhr_enc_dataSource" class="kr.co.reyonpharm.util.EncriptBasicDataSource">
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="url" value="#{configProp['ryhr.jdbc.url']}" />
+		<property name="username" value="#{configProp['ryhr.jdbc.username']}" />
+		<property name="password" value="#{configProp['ryhr.jdbc.password']}" />
+		<property name="validationQuery" value="SELECT 1 FROM DUAL"/>
+		<property name="testWhileIdle" value="true"/>
+		<property name="timeBetweenEvictionRunsMillis" value="60000"/>
+	</bean>		
+	
+	<bean id="ryhr_log4jdbc_dataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+	    <constructor-arg ref="ryhr_enc_dataSource" />
+	    <property name="logFormatter">
+	      <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+	        <property name="loggingType" value="MULTI_LINE" />
+	        <property name="sqlPrefix" value="SQL:::" />
+	      </bean>
+	     </property>
+	</bean>
+	
+	<bean id="ryhr_transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="ryhr_log4jdbc_dataSource" />
+	</bean>
+	
+	<tx:annotation-driven transaction-manager="ryhr_transactionManager" />
+
+	<bean id="ryhr_sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="ryhr_log4jdbc_dataSource"/>
+		<property name="mapperLocations" value="classpath*:kr/co/reyonpharm/**/*_Ryhr.xml" />
+		<property name="typeAliasesPackage" value="kr.co.reyonpharm.models" />
+		<property name="configuration">
+			<bean class="org.apache.ibatis.session.Configuration">
+				<property name="mapUnderscoreToCamelCase" value="true"/>
+				<property name="callSettersOnNulls" value="true"/>
+			</bean>
+		</property>
+	</bean>
+	
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="kr.co.reyonpharm.**.ryhr" />
+		<property name="annotationClass" value="org.springframework.stereotype.Repository"/>
+		<property name="sqlSessionFactoryBeanName" value="ryhr_sqlSessionFactory" />
+	</bean>
+	
+	<bean id="ryhrSession" class="org.mybatis.spring.SqlSessionTemplate" destroy-method="clearCache">
+		<constructor-arg index="0" ref="ryhr_sqlSessionFactory" />
+	</bean>
+	
+	<!-- RYSD DB -->
+	<bean id="rysd_enc_dataSource" class="kr.co.reyonpharm.util.EncriptBasicDataSource">
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="url" value="#{configProp['rysd.jdbc.url']}" />
+		<property name="username" value="#{configProp['rysd.jdbc.username']}" />
+		<property name="password" value="#{configProp['rysd.jdbc.password']}" />
+		<property name="validationQuery" value="SELECT 1 FROM DUAL"/>
+		<property name="testWhileIdle" value="true"/>
+		<property name="timeBetweenEvictionRunsMillis" value="60000"/>
+	</bean>		
+	
+	<bean id="rysd_log4jdbc_dataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+	    <constructor-arg ref="rysd_enc_dataSource" />
+	    <property name="logFormatter">
+	      <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+	        <property name="loggingType" value="MULTI_LINE" />
+	        <property name="sqlPrefix" value="SQL:::" />
+	      </bean>
+	      </property>
+	</bean>
+	
+	<bean id="rysd_transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="rysd_log4jdbc_dataSource" />
+	</bean>
+	
+	<tx:annotation-driven transaction-manager ="rysd_transactionManager"/>	
+
+	<bean id="rysd_sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="rysd_log4jdbc_dataSource"/>
+		<property name="mapperLocations" value="classpath*:kr/co/reyonpharm/**/*_Rysd.xml" />
+		<property name="typeAliasesPackage" value="kr.co.reyonpharm.models" />
+		<property name="configuration">
+			<bean class="org.apache.ibatis.session.Configuration">
+				<property name="mapUnderscoreToCamelCase" value="true"/>
+				<property name="callSettersOnNulls" value="true"/>
+			</bean>
+		</property>
+	</bean>
+	
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="kr.co.reyonpharm.**.rysd" />
+		<property name="annotationClass" value="org.springframework.stereotype.Repository"/>
+		<property name="sqlSessionFactoryBeanName" value="rysd_sqlSessionFactory" />
+	</bean>
+	
+	<bean id="rysdSession" class="org.mybatis.spring.SqlSessionTemplate" destroy-method="clearCache">
+		<constructor-arg index="0" ref="rysd_sqlSessionFactory" />
+	</bean>
+	
+	<!-- RYXRS DB -->
+	<bean id="ryxrs_enc_dataSource" class="kr.co.reyonpharm.util.EncriptBasicDataSource">
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="url" value="#{configProp['ryxrs.jdbc.url']}" />
+		<property name="username" value="#{configProp['ryxrs.jdbc.username']}" />
+		<property name="password" value="#{configProp['ryxrs.jdbc.password']}" />
+		<property name="validationQuery" value="SELECT 1 FROM DUAL"/>
+		<property name="testWhileIdle" value="true"/>
+		<property name="timeBetweenEvictionRunsMillis" value="60000"/>
+	</bean>		
+	
+	<bean id="ryxrs_log4jdbc_dataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+	    <constructor-arg ref="ryxrs_enc_dataSource" />
+	    <property name="logFormatter">
+	      <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+	        <property name="loggingType" value="MULTI_LINE" />
+	        <property name="sqlPrefix" value="SQL:::" />
+	      </bean>
+	      </property>
+	</bean>
+	
+	<bean id="ryxrs_transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="ryxrs_log4jdbc_dataSource" />
+	</bean>
+	
+	<tx:annotation-driven transaction-manager ="ryxrs_transactionManager"/>	
+
+	<bean id="ryxrs_sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="ryxrs_log4jdbc_dataSource"/>
+		<property name="mapperLocations" value="classpath*:kr/co/reyonpharm/**/*_Ryxrs.xml" />
+		<property name="typeAliasesPackage" value="kr.co.reyonpharm.models" />
+		<property name="configLocation" value="classpath:config/mybatis-config.xml"/>
+	</bean>
+	
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="kr.co.reyonpharm.**.ryxrs" />
+		<property name="annotationClass" value="org.springframework.stereotype.Repository"/>
+		<property name="sqlSessionFactoryBeanName" value="ryxrs_sqlSessionFactory" />
+	</bean>
+	
+	<bean id="ryxrsSession" class="org.mybatis.spring.SqlSessionTemplate" destroy-method="clearCache">
+		<constructor-arg index="0" ref="ryxrs_sqlSessionFactory" />
+	</bean>
+	
+	<!-- RYMM DB -->
+	<bean id="rymm_enc_dataSource" class="kr.co.reyonpharm.util.EncriptBasicDataSource">
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="url" value="#{configProp['rymm.jdbc.url']}" />
+		<property name="username" value="#{configProp['rymm.jdbc.username']}" />
+		<property name="password" value="#{configProp['rymm.jdbc.password']}" />
+		<property name="validationQuery" value="SELECT 1 FROM DUAL"/>
+		<property name="testWhileIdle" value="true"/>
+		<property name="timeBetweenEvictionRunsMillis" value="60000"/>
+	</bean>		
+	
+	<bean id="rymm_log4jdbc_dataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+	    <constructor-arg ref="rymm_enc_dataSource" />
+	    <property name="logFormatter">
+	      <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+	        <property name="loggingType" value="MULTI_LINE" />
+	        <property name="sqlPrefix" value="SQL:::" />
+	      </bean>
+	      </property>
+	</bean>
+	
+	<bean id="rymm_transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="rymm_log4jdbc_dataSource" />
+	</bean>
+	
+	<tx:annotation-driven transaction-manager ="rymm_transactionManager"/>	
+
+	<bean id="rymm_sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="rymm_log4jdbc_dataSource"/>
+		<property name="mapperLocations" value="classpath*:kr/co/reyonpharm/**/*_Rymm.xml" />
+		<property name="typeAliasesPackage" value="kr.co.reyonpharm.models" />
+		<property name="configLocation" value="classpath:config/mybatis-config.xml"/>
+	</bean>
+	
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="kr.co.reyonpharm.**.rymm" />
+		<property name="annotationClass" value="org.springframework.stereotype.Repository"/>
+		<property name="sqlSessionFactoryBeanName" value="rymm_sqlSessionFactory" />
+	</bean>
+	
+	<bean id="rymmSession" class="org.mybatis.spring.SqlSessionTemplate" destroy-method="clearCache">
+		<constructor-arg index="0" ref="rymm_sqlSessionFactory" />
+	</bean>
+	
+	<!-- RYACC DB -->
+	<bean id="ryacc_enc_dataSource" class="kr.co.reyonpharm.util.EncriptBasicDataSource">
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="url" value="#{configProp['ryacc.jdbc.url']}" />
+		<property name="username" value="#{configProp['ryacc.jdbc.username']}" />
+		<property name="password" value="#{configProp['ryacc.jdbc.password']}" />
+		<property name="validationQuery" value="SELECT 1 FROM DUAL"/>
+		<property name="testWhileIdle" value="true"/>
+		<property name="timeBetweenEvictionRunsMillis" value="60000"/>
+	</bean>		
+	
+	<bean id="ryacc_log4jdbc_dataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+	    <constructor-arg ref="ryacc_enc_dataSource" />
+	    <property name="logFormatter">
+	      <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+	        <property name="loggingType" value="MULTI_LINE" />
+	        <property name="sqlPrefix" value="SQL:::" />
+	      </bean>
+	      </property>
+	</bean>
+	
+	<bean id="ryacc_transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="ryacc_log4jdbc_dataSource" />
+	</bean>
+	
+	<tx:annotation-driven transaction-manager ="ryacc_transactionManager"/>	
+
+	<bean id="ryacc_sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="ryacc_log4jdbc_dataSource"/>
+		<property name="mapperLocations" value="classpath*:kr/co/reyonpharm/**/*_Ryacc.xml" />
+		<property name="typeAliasesPackage" value="kr.co.reyonpharm.models" />
+		<property name="configuration">
+			<bean class="org.apache.ibatis.session.Configuration">
+				<property name="mapUnderscoreToCamelCase" value="true"/>
+				<property name="callSettersOnNulls" value="true"/>
+			</bean>
+		</property>
+	</bean>
+	
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="kr.co.reyonpharm.**.ryacc" />
+		<property name="annotationClass" value="org.springframework.stereotype.Repository"/>
+		<property name="sqlSessionFactoryBeanName" value="ryacc_sqlSessionFactory" />
+	</bean>
+	
+	<bean id="ryaccSession" class="org.mybatis.spring.SqlSessionTemplate" destroy-method="clearCache">
+		<constructor-arg index="0" ref="ryacc_sqlSessionFactory" />
+	</bean>
+	
+	<!-- MSSQL DB -->
+	<bean id="mssql_enc_dataSource" class="kr.co.reyonpharm.util.EncriptBasicDataSource">
+		<property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+		<property name="url" value="#{configProp['mssql.jdbc.url']}" />
+		<property name="username" value="#{configProp['mssql.jdbc.username']}" />
+		<property name="password" value="#{configProp['mssql.jdbc.password']}" />
+		<property name="validationQuery" value="SELECT 1"/>
+		<property name="testWhileIdle" value="true"/>
+		<property name="timeBetweenEvictionRunsMillis" value="60000"/>
+	</bean>		
+	
+	<bean id="mssql_log4jdbc_dataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+	    <constructor-arg ref="mssql_enc_dataSource" />
+	    <property name="logFormatter">
+	      <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+	        <property name="loggingType" value="MULTI_LINE" />
+	        <property name="sqlPrefix" value="SQL:::" />
+	      </bean>
+	      </property>
+	</bean>
+	
+	<bean id="mssql_transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="mssql_log4jdbc_dataSource" />
+	</bean>
+	
+	<tx:annotation-driven transaction-manager ="mssql_transactionManager"/>	
+
+	<bean id="mssql_sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="mssql_log4jdbc_dataSource"/>
+		<property name="mapperLocations" value="classpath*:kr/co/reyonpharm/**/*_Mssql.xml" />
+		<property name="typeAliasesPackage" value="kr.co.reyonpharm.models" />
+		<property name="configuration">
+			<bean class="org.apache.ibatis.session.Configuration">
+				<property name="mapUnderscoreToCamelCase" value="true"/>
+				<property name="callSettersOnNulls" value="true"/>
+			</bean>
+		</property>
+	</bean>
+	
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="kr.co.reyonpharm.**.mssql" />
+		<property name="annotationClass" value="org.springframework.stereotype.Repository"/>
+		<property name="sqlSessionFactoryBeanName" value="mssql_sqlSessionFactory" />
+	</bean>
+	
+	<bean id="mssqlSession" class="org.mybatis.spring.SqlSessionTemplate" destroy-method="clearCache">
+		<constructor-arg index="0" ref="mssql_sqlSessionFactory" />
+	</bean>
+	
+	<!-- GW DB -->
+	<bean id="gw_enc_dataSource" class="kr.co.reyonpharm.util.EncriptBasicDataSource">
+		<property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+		<property name="url" value="#{configProp['gw.jdbc.url']}" />
+		<property name="username" value="#{configProp['gw.jdbc.username']}" />
+		<property name="password" value="#{configProp['gw.jdbc.password']}" />
+		<property name="validationQuery" value="SELECT 1"/>
+		<property name="testWhileIdle" value="true"/>
+		<property name="timeBetweenEvictionRunsMillis" value="60000"/>
+	</bean>		
+	
+	<bean id="gw_log4jdbc_dataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+	    <constructor-arg ref="gw_enc_dataSource" />
+	    <property name="logFormatter">
+	      <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+	        <property name="loggingType" value="MULTI_LINE" />
+	        <property name="sqlPrefix" value="SQL:::" />
+	      </bean>
+	      </property>
+	</bean>
+	
+	<bean id="gw_transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="gw_log4jdbc_dataSource" />
+	</bean>
+	
+	<tx:annotation-driven transaction-manager ="gw_transactionManager"/>	
+
+	<bean id="gw_sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="gw_log4jdbc_dataSource"/>
+		<property name="mapperLocations" value="classpath*:kr/co/reyonpharm/**/*_Gw.xml" />
+		<property name="typeAliasesPackage" value="kr.co.reyonpharm.models" />
+		<property name="configuration">
+			<bean class="org.apache.ibatis.session.Configuration">
+				<property name="mapUnderscoreToCamelCase" value="true"/>
+				<property name="callSettersOnNulls" value="true"/>
+			</bean>
+		</property>
+	</bean>
+	
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="kr.co.reyonpharm.**.gw" />
+		<property name="annotationClass" value="org.springframework.stereotype.Repository"/>
+		<property name="sqlSessionFactoryBeanName" value="gw_sqlSessionFactory" />
+	</bean>
+	
+	<bean id="gwSession" class="org.mybatis.spring.SqlSessionTemplate" destroy-method="clearCache">
+		<constructor-arg index="0" ref="gw_sqlSessionFactory" />
+	</bean>
+	
+	<!-- GWIF DB -->
+	<bean id="gwif_enc_dataSource" class="kr.co.reyonpharm.util.EncriptBasicDataSource">
+		<property name="driverClassName" value="com.microsoft.sqlserver.jdbc.SQLServerDriver" />
+		<property name="url" value="#{configProp['gwif.jdbc.url']}" />
+		<property name="username" value="#{configProp['gwif.jdbc.username']}" />
+		<property name="password" value="#{configProp['gwif.jdbc.password']}" />
+		<property name="validationQuery" value="SELECT 1"/>
+		<property name="testWhileIdle" value="true"/>
+		<property name="timeBetweenEvictionRunsMillis" value="60000"/>
+	</bean>		
+	
+	<bean id="gwif_log4jdbc_dataSource" class="net.sf.log4jdbc.Log4jdbcProxyDataSource">
+	    <constructor-arg ref="gwif_enc_dataSource" />
+	    <property name="logFormatter">
+	      <bean class="net.sf.log4jdbc.tools.Log4JdbcCustomFormatter">
+	        <property name="loggingType" value="MULTI_LINE" />
+	        <property name="sqlPrefix" value="SQL:::" />
+	      </bean>
+	      </property>
+	</bean>
+	
+	<bean id="gwif_transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="gwif_log4jdbc_dataSource" />
+	</bean>
+	
+	<tx:annotation-driven transaction-manager ="gwif_transactionManager"/>	
+
+	<bean id="gwif_sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="gwif_log4jdbc_dataSource"/>
+		<property name="mapperLocations" value="classpath*:kr/co/reyonpharm/**/*_Gwif.xml" />
+		<property name="typeAliasesPackage" value="kr.co.reyonpharm.models" />
+		<property name="configLocation" value="classpath:config/mybatis-config-mssql.xml"/>
+	</bean>
+	
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="kr.co.reyonpharm.**.gwif" />
+		<property name="annotationClass" value="org.springframework.stereotype.Repository"/>
+		<property name="sqlSessionFactoryBeanName" value="gwif_sqlSessionFactory" />
+	</bean>
+	
+	<bean id="gwifSession" class="org.mybatis.spring.SqlSessionTemplate" destroy-method="clearCache">
+		<constructor-arg index="0" ref="gwif_sqlSessionFactory" />
+	</bean>
+	
+</beans>

@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.PhoneMapper_Ryhr">
+	
+	<select id="selectPhoneInfoBookList" parameterType="PhoneInfo" resultType="PhoneInfo">
+		SELECT
+	        A.PHONE_SEQ,
+	        A.SABUN,
+	        A.VIEW_DEPT,
+	        A.VIEW_POSI,
+	        A.VIEW_NAME,
+	        A.PHONE_TYPE1,
+	        A.PHONE_TYPE2,
+	        A.PHONE_TYPE3,
+	        A.PHONENUM1,
+	        A.PHONENUM2,
+	        A.PHONENUM3,
+	        A.FAXNUM1,
+	        A.FAXNUM2,
+	        A.FAXNUM3,
+	        CASE 
+                WHEN A.PHONE_TYPE1 = '2' OR A.PHONE_TYPE1 = '3' THEN
+                    (CASE WHEN A.PHONENUM1 IS NOT NULL THEN 'T : '||A.PHONENUM1||' ' ELSE '' END)||
+                    (CASE WHEN A.FAXNUM1 IS NOT NULL THEN 'F : '||A.FAXNUM1 ELSE '' END)
+                ELSE A.PHONENUM1
+            END PHONENUM10,
+            CASE 
+                WHEN A.PHONE_TYPE2 = '2' OR A.PHONE_TYPE2 = '3' THEN
+                    (CASE WHEN A.PHONENUM2 IS NOT NULL THEN 'T : '||A.PHONENUM2||' ' ELSE '' END)||
+                    (CASE WHEN A.FAXNUM2 IS NOT NULL THEN 'F : '||A.FAXNUM2 ELSE '' END)
+                ELSE A.PHONENUM2
+            END PHONENUM20,
+            CASE 
+                WHEN A.PHONE_TYPE3 = '2' OR A.PHONE_TYPE3 = '3' THEN
+                    (CASE WHEN A.PHONENUM3 IS NOT NULL THEN 'T : '||A.PHONENUM3||' ' ELSE '' END)||
+                    (CASE WHEN A.FAXNUM3 IS NOT NULL THEN 'F : '||A.FAXNUM3 ELSE '' END)
+                ELSE A.PHONENUM3
+            END PHONENUM30,
+	        A.ORDER_SEQ1,
+	        A.ORDER_SEQ2,
+	        A.ORDER_SEQ3,
+	        A.REG_DATE,
+	        A.REG_SABUN
+	    FROM 
+	        RYHR.RYHCF19MT A
+	        LEFT OUTER JOIN (SELECT T1.SABUN, T2.INNER_CD FROM RYHR.RYHZZ01MT T1 INNER JOIN RYHR.RYHZZ02MT T2 ON T1.DEPT_CODE = T2.DEPT_CODE) B ON A.SABUN = B.SABUN
+	    WHERE 1=1 
+	    <if test="phoneType == '10'">
+			AND PHONE_TYPE1 IS NOT NULL
+		ORDER BY A.ORDER_SEQ1
+		</if>
+		<if test="phoneType == '20'">
+			AND PHONE_TYPE2 IS NOT NULL
+		ORDER BY A.ORDER_SEQ2
+		</if>
+		<if test="phoneType == '30'">
+			AND PHONE_TYPE3 IS NOT NULL
+		ORDER BY A.ORDER_SEQ3
+		</if>
+	</select>
+	
+	<select id="selectPhoneInfoList" parameterType="PhoneInfo" resultType="PhoneInfo">
+		SELECT /* selectPhoneInfoList */
+			B.DEPT_NAME, 
+			A.SABUN USERNAME, 
+			A.KNAME, 
+			C.POS_LOG,
+			NVL2(D.PHONE_SEQ, 'true', 'false') IS_SAVE_TMP,
+		    D.PHONE_SEQ,
+		    D.SABUN,
+		    D.VIEW_DEPT,
+		    D.VIEW_POSI,
+		    D.VIEW_NAME,
+		    D.PHONE_TYPE1,
+		    D.PHONE_TYPE2,
+		    D.PHONE_TYPE3,
+		    D.PHONENUM1,
+		    D.PHONENUM2,
+		    D.PHONENUM3,
+		    D.FAXNUM1,
+		    D.FAXNUM2,
+		    D.FAXNUM3,
+		    D.REG_DATE,
+		    D.REG_SABUN
+		FROM 
+			RYHR.RYHZZ01MT A
+			INNER JOIN RYHR.RYHZZ02MT B ON A.DEPT_CODE = B.DEPT_CODE
+			INNER JOIN RYHR.RYHAA20MT C ON A.POSIT_CD = C.POSIT_CD
+		    FULL OUTER JOIN RYHR.RYHCF19MT D ON A.SABUN = D.SABUN
+		WHERE 1=1 
+			AND NVL(A.RETIRE_DAY,'99991231') <![CDATA[>=]]> TO_CHAR(ADD_MONTHS(SYSDATE,-3), 'YYYYMMDD')
+		<if test="searchText != null and searchText != ''">
+			AND ( B.DEPT_NAME LIKE '%'||#{searchText}||'%' OR A.SABUN LIKE '%'||#{searchText}||'%' OR A.KNAME LIKE '%'||#{searchText}||'%' OR D.VIEW_DEPT LIKE '%'||#{searchText}||'%' OR D.VIEW_POSI LIKE '%'||#{searchText}||'%' OR D.VIEW_NAME LIKE '%'||#{searchText}||'%' )
+		</if>
+		ORDER BY B.INNER_CD, A.POSIT_CD, A.HOBONG DESC
+	</select>
+	
+	<insert id="insertPhoneInfo" parameterType="PhoneInfo">
+		INSERT /* insertPhoneInfo */
+		INTO RYHR.RYHCF19MT (
+			PHONE_SEQ,
+			SABUN,
+			VIEW_DEPT,
+			VIEW_POSI,
+			VIEW_NAME,
+			PHONE_TYPE1,
+			PHONE_TYPE2,
+			PHONE_TYPE3,
+			PHONENUM1,
+			PHONENUM2,
+			PHONENUM3,
+			FAXNUM1,
+			FAXNUM2,
+			FAXNUM3,
+			REG_DATE,
+			REG_SABUN
+		) VALUES (
+			SEQ_RYHCF19MT.NEXTVAL,
+			#{sabun},
+			#{viewDept},
+			#{viewPosi},
+			#{viewName},
+			#{phoneType1},
+			#{phoneType2},
+			#{phoneType3},
+			#{phonenum1},
+			#{phonenum2},
+			#{phonenum3},
+			#{faxnum1},
+			#{faxnum2},
+			#{faxnum3},
+			SYSDATE,
+			#{regSabun}
+		)
+	</insert>
+	
+	<update id="updatePhoneInfo" parameterType="PhoneInfo">
+		UPDATE /* updatePhoneInfo */
+			RYHR.RYHCF19MT 
+		SET 
+	    	SABUN = #{sabun},
+			VIEW_DEPT = #{viewDept},
+			VIEW_POSI = #{viewPosi},
+			VIEW_NAME = #{viewName},
+			PHONE_TYPE1 = #{phoneType1},
+			PHONE_TYPE2 = #{phoneType2},
+			PHONE_TYPE3 = #{phoneType3},
+			PHONENUM1 = #{phonenum1},
+			PHONENUM2 = #{phonenum2},
+			PHONENUM3 = #{phonenum3},
+			FAXNUM1 = #{faxnum1},
+			FAXNUM2 = #{faxnum2},
+			FAXNUM3 = #{faxnum3},
+			REG_DATE = SYSDATE,
+			REG_SABUN = #{regSabun}
+		WHERE 
+			PHONE_SEQ = #{phoneSeq}
+	</update>
+	
+	<delete id="deletePhoneInfo" parameterType="PhoneInfo">
+		DELETE /* deletePhoneInfo */
+		FROM RYHR.RYHCF19MT
+		WHERE PHONE_SEQ = #{phoneSeq}
+	</delete>
+	
+	<select id="selectPhoneInfoLastUpdateTime" parameterType="PhoneInfo" resultType="PhoneInfo">
+		SELECT /* selectPhoneInfoLastUpdateTime */
+			TO_CHAR(MAX(REG_DATE), 'YYYY-MM-DD HH24:MI') REG_DATE
+		FROM RYHR.RYHCF19MT
+	</select>
+	
+	<update id="updatePhoneOrderInfo" parameterType="PhoneInfo">
+		UPDATE /* updatePhoneOrderInfo */
+			RYHR.RYHCF19MT 
+		SET 
+		<if test="orderSeq1 != null and orderSeq1 != ''">
+			ORDER_SEQ1 = #{orderSeq1},
+		</if>
+		<if test="orderSeq2 != null and orderSeq2 != ''">
+			ORDER_SEQ2 = #{orderSeq2},
+		</if>
+		<if test="orderSeq3 != null and orderSeq3 != ''">
+			ORDER_SEQ3 = #{orderSeq3},
+		</if>
+			REG_SABUN = #{regSabun}
+		WHERE 
+			PHONE_SEQ = #{phoneSeq}
+	</update>
+	
+</mapper>

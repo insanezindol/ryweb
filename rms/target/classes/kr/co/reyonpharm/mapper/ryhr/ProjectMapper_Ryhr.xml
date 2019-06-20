@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.ProjectMapper_Ryhr">
+	
+	<sql id="selectProjectListWhere">
+		<if test="saupCode != null and saupCode != ''">
+			AND t1.SAUP_CODE = #{saupCode}
+		</if>
+		<if test="deptCodeList != null">
+			AND ( t1.DEPT_CODE IN
+			<foreach collection="deptCodeList" item="item" index="index" separator="," open="(" close=")">
+			#{item}
+			</foreach>
+			<foreach collection="attSabunList" item="item" index="index" separator="OR" open="OR" >
+			t1.REG_SABUN = #{item} OR t2.ATTENDANT_SABUN LIKE '%'||#{item}||'%'
+			</foreach>
+			)
+		</if>
+		<if test="sabunList != null">
+			<foreach collection="sabunList" item="item" index="index" separator="OR" open="AND (" close=")">
+			t1.REG_SABUN = #{item} OR t2.ATTENDANT_SABUN LIKE '%'||#{item}||'%'
+			</foreach>
+		</if>
+		<if test="s_projectName != null and s_projectName != ''">
+			AND t1.PROJECT_NAME LIKE '%'||#{s_projectName}||'%'
+		</if>
+		<if test="s_deptCode != null and s_deptCode != ''">
+			AND t1.DEPT_CODE = #{s_deptCode}
+		</if>
+		<if test="s_regName != null and s_regName != ''">
+			AND t1.REG_NAME = #{s_regName}
+		</if>
+		<if test="s_status != null and s_status != ''">
+			AND t1.STATUS = #{s_status}
+		</if>
+	</sql>
+	
+	<select id="selectProjectListCount" parameterType="PageParam" resultType="int">
+		SELECT /* selectProjectListCount */
+			COUNT(1)
+	    FROM (
+	    	SELECT
+				t1.PROJECT_SEQ,
+				t1.PROJECT_NAME,
+				t1.STATUS,
+				t1.SAUP_CODE,
+				t1.DEPT_CODE,
+				t1.DEPT_NAME,
+				t1.PROJECT_START_DATE,
+				t1.PROJECT_END_DATE,
+				t1.REG_SABUN,
+				t1.REG_NAME,
+				t1.REG_DATE,
+				t1.UPD_DATE,
+				SUBSTR(XMLAGG(XMLELEMENT(A,',' || t2.ATTENDANT_SABUN) ORDER BY t2.ATTENDANT_SABUN).EXTRACT('//text()'), 2) AS ATTENDANT_SABUN
+			FROM 
+				RYHR.RYHCF01MT t1 LEFT OUTER JOIN RYHR.RYHCF03MT t2
+            	ON t1.PROJECT_SEQ = t2.MEETING_SEQ AND t2.ATTENDANT_TYPE IN ('03', '04')
+			WHERE 1=1
+				<include refid="selectProjectListWhere" />
+			GROUP BY
+				t1.PROJECT_SEQ,
+				t1.PROJECT_NAME,
+				t1.STATUS,
+				t1.SAUP_CODE,
+				t1.DEPT_CODE,
+				t1.DEPT_NAME,
+				t1.PROJECT_START_DATE,
+				t1.PROJECT_END_DATE,
+				t1.REG_SABUN,
+				t1.REG_NAME,
+				t1.REG_DATE,
+				t1.UPD_DATE
+	    	) a
+	</select>
+	
+	<select id="selectProjectList" parameterType="PageParam" resultType="ProjectInfo">
+		SELECT /* selectProjectList */
+			b.RNUM,
+			b.PROJECT_SEQ,
+			b.PROJECT_NAME,
+			b.STATUS,
+			b.SAUP_CODE,
+			b.DEPT_CODE,
+			b.DEPT_NAME,
+			TO_CHAR(b.PROJECT_START_DATE, 'YYYY-MM-DD') PROJECT_START_DATE,
+			TO_CHAR(b.PROJECT_END_DATE, 'YYYY-MM-DD') PROJECT_END_DATE,
+			b.REG_SABUN,
+			b.REG_NAME,
+			TO_CHAR(b.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			TO_CHAR(b.UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE
+		FROM (
+		  SELECT
+		    ROWNUM RNUM,
+		    a.*
+		  FROM (
+		    SELECT
+				t1.PROJECT_SEQ,
+				t1.PROJECT_NAME,
+				t1.STATUS,
+				t1.SAUP_CODE,
+				t1.DEPT_CODE,
+				t1.DEPT_NAME,
+				t1.PROJECT_START_DATE,
+				t1.PROJECT_END_DATE,
+				t1.REG_SABUN,
+				t1.REG_NAME,
+				t1.REG_DATE,
+				t1.UPD_DATE,
+				SUBSTR(XMLAGG(XMLELEMENT(A,',' || t2.ATTENDANT_SABUN) ORDER BY t2.ATTENDANT_SABUN).EXTRACT('//text()'), 2) AS ATTENDANT_SABUN
+			FROM 
+				RYHR.RYHCF01MT t1 LEFT OUTER JOIN RYHR.RYHCF03MT t2
+            	ON t1.PROJECT_SEQ = t2.MEETING_SEQ AND t2.ATTENDANT_TYPE IN ('03', '04')
+			WHERE 1=1
+				<include refid="selectProjectListWhere" />
+			GROUP BY
+				t1.PROJECT_SEQ,
+				t1.PROJECT_NAME,
+				t1.STATUS,
+				t1.SAUP_CODE,
+				t1.DEPT_CODE,
+				t1.DEPT_NAME,
+				t1.PROJECT_START_DATE,
+				t1.PROJECT_END_DATE,
+				t1.REG_SABUN,
+				t1.REG_NAME,
+				t1.REG_DATE,
+				t1.UPD_DATE
+			ORDER BY PROJECT_SEQ DESC
+		  ) a
+		) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<select id="selectProject" parameterType="ProjectInfo" resultType="ProjectInfo">
+		SELECT /* selectProject */
+		    PROJECT_SEQ,
+			PROJECT_NAME,
+			STATUS,
+			SAUP_CODE,
+			DEPT_CODE,
+			DEPT_NAME,
+			REG_SABUN,
+			REG_NAME,
+			TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			UPD_SABUN,
+			UPD_NAME,
+			TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE,
+			TO_CHAR(PROJECT_START_DATE, 'YYYY-MM-DD') PROJECT_START_DATE,
+			TO_CHAR(PROJECT_END_DATE, 'YYYY-MM-DD') PROJECT_END_DATE
+		FROM 
+			RYHR.RYHCF01MT
+		WHERE 1=1
+			AND PROJECT_SEQ = #{projectSeq}
+	</select>
+	
+	<insert id="insertProject" parameterType="ProjectInfo">
+		INSERT /* insertProject */
+		INTO RYHR.RYHCF01MT (
+			PROJECT_SEQ,
+			PROJECT_NAME,
+			STATUS,
+			SAUP_CODE,
+			DEPT_CODE,
+			DEPT_NAME,
+			REG_SABUN,
+			REG_NAME,
+			REG_DATE,
+			UPD_SABUN,
+			UPD_NAME,
+			UPD_DATE,
+			PROJECT_START_DATE,
+			PROJECT_END_DATE
+		) VALUES (
+			SEQ_RYHCF01MT.NEXTVAL,
+			#{projectName},
+			#{status},
+			#{saupCode},
+			#{deptCode},
+			#{deptName},
+			#{regSabun},
+			#{regName},
+			SYSDATE,
+			#{regSabun},
+			#{regName},
+			SYSDATE,
+			TO_DATE(#{projectStartDate},'YYYY-MM-DD'),
+			TO_DATE(#{projectEndDate},'YYYY-MM-DD')
+		)
+		<selectKey keyProperty="currseq" resultType="long" order="AFTER">
+			SELECT SEQ_RYHCF01MT.CURRVAL FROM DUAL
+		</selectKey>
+	</insert>
+	
+	<update id="updateProject" parameterType="ProjectInfo">
+		UPDATE /* updateProject */
+			RYHR.RYHCF01MT 
+		SET 
+			PROJECT_NAME = #{projectName}, 
+			STATUS = #{status},
+			UPD_SABUN = #{updSabun},
+			UPD_NAME = #{updName}, 
+			UPD_DATE = SYSDATE,
+			PROJECT_START_DATE = TO_DATE(#{projectStartDate},'YYYY-MM-DD'),
+			PROJECT_END_DATE = TO_DATE(#{projectEndDate},'YYYY-MM-DD')
+		WHERE PROJECT_SEQ = #{projectSeq} 
+	</update>
+	
+	<delete id="deleteProject" parameterType="ProjectInfo">
+		DELETE /* deleteProject */
+		FROM RYHR.RYHCF01MT 
+		WHERE PROJECT_SEQ = #{projectSeq} 
+	</delete>
+	
+	<select id="selectMeetingCntByProject" parameterType="MeetingInfo" resultType="int">
+		SELECT /* selectMeetingCntByProject */
+			COUNT(1) CNT
+		FROM RYHR.RYHCF02MT
+		WHERE 1=1
+			AND PROJECT_SEQ = #{projectSeq}
+	</select>
+	
+	<select id="selectMeetingListByProject" parameterType="MeetingInfo" resultType="MeetingInfo">
+		SELECT /* selectMeetingListByProject */
+			b.RNUM,
+			b.MEETING_SEQ,
+			b.PROJECT_SEQ,
+			b.MEETING_NAME,
+			TO_CHAR(b.MEETING_START_DATE, 'YYYY-MM-DD HH24:MI') MEETING_START_DATE,
+			TO_CHAR(b.MEETING_END_DATE, 'YYYY-MM-DD HH24:MI') MEETING_END_DATE,
+			b.MEETING_PLACE,
+			b.MEETING_TYPE,
+			b.MEETING_STATUS,
+			b.SAUP_CODE,
+			b.DEPT_CODE,
+			b.DEPT_NAME,
+			b.REG_SABUN,
+			b.REG_NAME,
+			TO_CHAR(b.MEETING_REG_DATE, 'YYYY-MM-DD HH24:MI') MEETING_REG_DATE,
+			TO_CHAR(b.MEETING_UPD_DATE, 'YYYY-MM-DD HH24:MI') MEETING_UPD_DATE,
+			b.VISIT_COMPANY,
+			b.VISIT_NAME,
+			b.MEETING_CONTENTS,
+			b.DECISION_CONTENTS,
+			b.PLAN_CONTENTS,
+			b.ISSUE_CONTENTS,
+			b.ATTACH_FILEPATH1,
+            b.ATTACH_FILENAME1,
+            b.ATTACH_FILESIZE1,
+            b.ATTACH_FILEPATH2,
+            b.ATTACH_FILENAME2,
+            b.ATTACH_FILESIZE2,
+            b.ATTACH_FILEPATH3,
+            b.ATTACH_FILENAME3,
+            b.ATTACH_FILESIZE3,
+            b.ATTACH_FILEPATH4,
+            b.ATTACH_FILENAME4,
+            b.ATTACH_FILESIZE4,
+            b.ATTACH_FILEPATH5,
+            b.ATTACH_FILENAME5,
+            b.ATTACH_FILESIZE5,
+			TO_CHAR(b.MEETING_RESULT_REG_DATE, 'YYYY-MM-DD HH24:MI') MEETING_RESULT_REG_DATE,
+			TO_CHAR(b.MEETING_RESULT_UPD_DATE, 'YYYY-MM-DD HH24:MI') MEETING_RESULT_UPD_DATE,
+			b.CONFIRM_SABUN,
+			b.CONFIRM_NAME,
+			TO_CHAR(b.CONFIRM_DATE, 'YYYY-MM-DD HH24:MI') CONFIRM_DATE,
+			c.CODE_NAME
+		FROM (
+		  SELECT
+		    ROWNUM RNUM,
+		    a.*
+		  FROM (
+		    SELECT
+				t1.MEETING_SEQ,
+                t1.PROJECT_SEQ,
+                t1.MEETING_NAME,
+                t1.MEETING_START_DATE,
+                t1.MEETING_END_DATE,
+                t1.MEETING_PLACE,
+                t1.MEETING_TYPE,
+                t1.MEETING_STATUS,
+                t1.SAUP_CODE,
+                t1.DEPT_CODE,
+                t1.DEPT_NAME,
+                t1.REG_SABUN,
+                t1.REG_NAME,
+                t1.MEETING_REG_DATE,
+                t1.MEETING_UPD_DATE,
+                t1.VISIT_COMPANY,
+                t1.VISIT_NAME,
+                t1.MEETING_CONTENTS,
+                t1.DECISION_CONTENTS,
+                t1.PLAN_CONTENTS,
+                t1.ISSUE_CONTENTS,
+                t1.ATTACH_FILEPATH1,
+                t1.ATTACH_FILENAME1,
+                t1.ATTACH_FILESIZE1,
+                t1.ATTACH_FILEPATH2,
+                t1.ATTACH_FILENAME2,
+                t1.ATTACH_FILESIZE2,
+                t1.ATTACH_FILEPATH3,
+                t1.ATTACH_FILENAME3,
+                t1.ATTACH_FILESIZE3,
+                t1.ATTACH_FILEPATH4,
+                t1.ATTACH_FILENAME4,
+                t1.ATTACH_FILESIZE4,
+                t1.ATTACH_FILEPATH5,
+                t1.ATTACH_FILENAME5,
+                t1.ATTACH_FILESIZE5,
+                t1.MEETING_RESULT_REG_DATE,
+                t1.MEETING_RESULT_UPD_DATE,
+                t1.SACTION_SABUN,
+                t1.SACTION_NAME,
+                t1.SACTION_DATE,
+                t1.SACTION_COMMENT,
+                t1.CONFIRM_SABUN,
+                t1.CONFIRM_NAME,
+                t1.CONFIRM_DATE,
+                t1.CONFIRM_COMMENT,
+                t1.RETURN_SABUN,
+                t1.RETURN_NAME,
+                t1.RETURN_DATE,
+                t1.RETURN_COMMENT,
+                SUBSTR(XMLAGG(XMLELEMENT(A,',' || t2.ATTENDANT_SABUN) ORDER BY t2.ATTENDANT_SABUN).EXTRACT('//text()'), 2) AS ATTENDANT_SABUN
+			FROM RYHR.RYHCF02MT t1 LEFT OUTER JOIN RYHR.RYHCF03MT t2
+            ON t1.MEETING_SEQ = t2.MEETING_SEQ AND t2.ATTENDANT_TYPE IN ('01', '02')
+			WHERE 1=1
+			<if test="projectSeq != null and projectSeq != ''">
+				AND t1.PROJECT_SEQ = #{projectSeq}
+			</if>
+			<if test="deptCodeList != null">
+				AND ( t1.DEPT_CODE IN
+				<foreach collection="deptCodeList" item="item" index="index" separator="," open="(" close=")">
+				#{item}
+				</foreach>
+				<foreach collection="attSabunList" item="item" index="index" separator="OR" open="OR" >
+				t1.REG_SABUN = #{item} OR t2.ATTENDANT_SABUN LIKE '%'||#{item}||'%'
+				</foreach>
+				)
+				<!-- OR t1.REG_SABUN = #{attSabun} OR t2.ATTENDANT_SABUN LIKE '%'||#{attSabun}||'%' ) -->
+			</if>
+			<if test="sabunList != null">
+				<foreach collection="sabunList" item="item" index="index" separator="OR" open="AND (" close=")">
+				t1.REG_SABUN = #{item} OR t2.ATTENDANT_SABUN LIKE '%'||#{item}||'%'
+				</foreach>
+			</if>
+			<!-- <if test="regSabun != null and regSabun != ''">
+				AND ( t1.REG_SABUN = #{regSabun} OR t2.ATTENDANT_SABUN LIKE '%'||#{attSabun}||'%' )
+			</if> -->
+			GROUP BY
+				t1.MEETING_SEQ,
+                t1.PROJECT_SEQ,
+                t1.MEETING_NAME,
+                t1.MEETING_START_DATE,
+                t1.MEETING_END_DATE,
+                t1.MEETING_PLACE,
+                t1.MEETING_TYPE,
+                t1.MEETING_STATUS,
+                t1.SAUP_CODE,
+                t1.DEPT_CODE,
+                t1.DEPT_NAME,
+                t1.REG_SABUN,
+                t1.REG_NAME,
+                t1.MEETING_REG_DATE,
+                t1.MEETING_UPD_DATE,
+                t1.VISIT_COMPANY,
+                t1.VISIT_NAME,
+                t1.MEETING_CONTENTS,
+                t1.DECISION_CONTENTS,
+                t1.PLAN_CONTENTS,
+                t1.ISSUE_CONTENTS,
+                t1.ATTACH_FILEPATH1,
+                t1.ATTACH_FILENAME1,
+                t1.ATTACH_FILESIZE1,
+                t1.ATTACH_FILEPATH2,
+                t1.ATTACH_FILENAME2,
+                t1.ATTACH_FILESIZE2,
+                t1.ATTACH_FILEPATH3,
+                t1.ATTACH_FILENAME3,
+                t1.ATTACH_FILESIZE3,
+                t1.ATTACH_FILEPATH4,
+                t1.ATTACH_FILENAME4,
+                t1.ATTACH_FILESIZE4,
+                t1.ATTACH_FILEPATH5,
+                t1.ATTACH_FILENAME5,
+                t1.ATTACH_FILESIZE5,
+                t1.MEETING_RESULT_REG_DATE,
+                t1.MEETING_RESULT_UPD_DATE,
+                t1.SACTION_SABUN,
+                t1.SACTION_NAME,
+                t1.SACTION_DATE,
+                t1.SACTION_COMMENT,
+                t1.CONFIRM_SABUN,
+                t1.CONFIRM_NAME,
+                t1.CONFIRM_DATE,
+                t1.CONFIRM_COMMENT,
+                t1.RETURN_SABUN,
+                t1.RETURN_NAME,
+                t1.RETURN_DATE,
+                t1.RETURN_COMMENT
+			ORDER BY t1.MEETING_START_DATE DESC
+		  ) a
+		) b, RYHR.RYHCD10MT c
+		WHERE c.GRP_CODE = 'AG' AND b.MEETING_PLACE = c.CODE
+	</select>
+	
+</mapper>

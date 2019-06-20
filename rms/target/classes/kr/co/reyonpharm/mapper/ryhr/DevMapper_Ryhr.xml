@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.DevMapper_Ryhr">
+	
+	<select id="selectAlarmHistoryList" resultType="AlarmInfo">
+		SELECT /* selectAlarmHistoryList */
+			A.ALARM_SEQ,
+			A.ALARM_SABUN,
+			B.KNAME ALARM_NAME,
+			TO_CHAR(A.ALARM_DATE, 'YYYY-MM-DD HH24:MI') ALARM_DATE,
+			A.ALARM_YN,
+			A.ALARM_TITLE,
+			A.ALARM_CONTENTS,
+			TO_CHAR(A.REG_DATE, 'YYYY-MM-DD HH24:MI') REG_DATE,
+			A.REG_SABUN,
+			A.REG_NAME,
+			TO_CHAR(A.RESULT_DATE, 'YYYY-MM-DD HH24:MI') RESULT_DATE,
+			A.RESULT_MSG
+		FROM
+			RYHR.RYHCF11MT A
+			LEFT OUTER JOIN RYHR.RYHZZ01MT B ON A.ALARM_SABUN = B.SABUN
+		WHERE 1=1
+		ORDER BY A.ALARM_DATE DESC, A.ALARM_SEQ DESC
+	</select>
+	
+	<select id="selectAlarmUserList" parameterType="UserInfo" resultType="UserInfo">
+		SELECT /* selectAlarmUserList */
+		    B.SABUN, 
+		    B.KNAME, 
+		    B.KNAME FNAME,
+		    B.DEPT_CODE, 
+		    C.DEPT_NAME, 
+		    CASE 
+		        WHEN C.DEPT_CODE IN ('7000','7050','7100','7010','7020','7130','7200','7030','7040','7080','7300','7400','7060','7070','7500','7600','7110','7120') THEN '20'
+		        /* WHEN C.DEPT_CODE IN ('8620','8621','8622','8623','8624') THEN '30' */
+		        WHEN C.DEPT_CODE IN ('6110','6210') THEN '40'
+		        WHEN C.DEPT_CODE IN ('6410','6420') THEN '50'
+		        ELSE '10'
+		    END SAUPCODE, 
+		    D.SAUP_NM SAUPNAME,
+		    B.DEPT_CODE INSADEPT, 
+		    E.DEPT_NAME INSANAME, 
+		    B.RETIRE_DAY,
+		    B.WORK_TYPE, 
+		    C.ACC_CODE, 
+		    B.GRADE, 
+		    B.RESPON,
+		    B.POSIT_CD,
+		    F.POS_LOG,
+		    A.DEVICE_TYPE,
+		    A.MSG_RECEIVE_TYPE
+		FROM
+			RYHR.RYHCF07MT A
+		    INNER JOIN RYHR.RYHZZ01MT B ON A.SABUN = B.SABUN
+		    INNER JOIN RYHR.RYHZZ02MT C ON B.DEPT_CODE = C.DEPT_CODE
+		    INNER JOIN RYACC.RYAZZ03MT D ON B.SAUP_CD1||B.SAUP_CD2 = D.SAUP_CD
+		    INNER JOIN RYHR.RYHZZ02MT E ON B.DEPT_CODE = E.DEPT_CODE
+		    INNER JOIN RYHR.RYHAA20MT F ON B.POSIT_CD = F.POSIT_CD
+		WHERE 1=1 
+		    AND NVL(B.RETIRE_DAY,'99991231') <![CDATA[>=]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+		ORDER BY B.DEPT_CODE, B.POSIT_CD
+	</select>
+	
+	<insert id="insertAlarm" parameterType="AlarmInfo">
+		INSERT /* insertAlarm */
+		INTO RYHR.RYHCF11MT (
+			ALARM_SEQ,
+			ALARM_SABUN,
+			ALARM_DATE,
+			ALARM_YN,
+			ALARM_TITLE,
+			ALARM_CONTENTS,
+			REG_DATE,
+			REG_SABUN,
+			REG_NAME
+		) VALUES (
+			SEQ_RYHCF11MT.NEXTVAL,
+			#{alarmSabun},
+			TO_DATE(#{alarmDate},'YYYY-MM-DD HH24:MI'),
+			#{alarmYn},
+			#{alarmTitle},
+			#{alarmContents},
+			SYSDATE,
+			#{regSabun},
+			#{regName}
+		)
+	</insert>
+	
+	<delete id="deleteAlarm" parameterType="AlarmInfo">
+		DELETE /* deleteAlarm */
+		FROM RYHR.RYHCF11MT
+		WHERE ALARM_SEQ = #{alarmSeq} 
+	</delete>
+	
+</mapper>

@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.ComingMapper_Ryhr">
+	
+	<sql id="selectComingListWhere">
+		<if test="s_visitCompany != null and s_visitCompany != ''">
+			AND t1.VISIT_COMPANY LIKE '%'||#{s_visitCompany}||'%'
+		</if>
+		<if test="s_visitName != null and s_visitName != ''">
+			AND t1.VISIT_NAME LIKE '%'||#{s_visitName}||'%'
+		</if>
+		<if test="(startDate != null and startDate != '') and (endDate != null and endDate != '')">
+			AND t1.VISIT_START_DATE <![CDATA[>=]]> TO_DATE(#{startDate},'YYYY-MM-DD HH24:MI') AND t1.VISIT_START_DATE <![CDATA[<=]]> TO_DATE(#{endDate},'YYYY-MM-DD HH24:MI')
+		</if>
+		<if test="s_deptCode != null and s_deptCode != ''">
+			AND t1.MEET_DEPT_CODE = #{s_deptCode}
+		</if>
+		<if test="s_regName != null and s_regName != ''">
+			AND t1.MEET_NAME = #{s_regName}
+		</if>
+	</sql>
+	
+	<select id="selectComingListCount" parameterType="PageParam" resultType="Integer">
+		SELECT /* selectComingListCount */
+			COUNT(1)
+	    FROM 
+			RYHR.RYHCF05MT t1 LEFT OUTER JOIN RYHR.RYHCF04MT t2 ON t1.VISIT_SEQ = t2.VISIT_SEQ
+		WHERE 1=1
+	    <include refid="selectComingListWhere" />
+	</select>
+	
+	<select id="selectComingList" parameterType="PageParam" resultType="ComingInfo">
+		SELECT /* selectComingList */
+			b.*
+		FROM (
+		  SELECT
+		    ROWNUM RNUM,
+		    a.*
+		  FROM (
+		  	SELECT 
+				t1.VISIT_SEQ,
+				t1.VISIT_COMPANY,
+				t1.VISIT_NAME,
+				TO_CHAR(t1.VISIT_START_DATE, 'YYYY-MM-DD HH24:MI') VISIT_START_DATE,
+				TO_CHAR(t1.VISIT_END_DATE, 'YYYY-MM-DD HH24:MI') VISIT_END_DATE,
+				t1.MEET_DEPT_CODE,
+				t1.MEET_DEPT_NAME,
+				t1.MEET_SABUN,
+				t1.MEET_NAME,
+				t1.REG_DEPT_CODE,
+				t1.REG_DEPT_NAME,
+				t1.REG_SABUN,
+				t1.REG_NAME,
+				TO_CHAR(t1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+				TO_CHAR(t1.UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE,
+				t2.PARKING_SEQ,
+				NVL2(t2.VISIT_SEQ,'Y','N') TICKET_CHECK
+			FROM 
+				RYHR.RYHCF05MT t1 LEFT OUTER JOIN RYHR.RYHCF04MT t2 ON t1.VISIT_SEQ = t2.VISIT_SEQ
+			WHERE 1=1
+				<include refid="selectComingListWhere" />
+			ORDER BY t1.VISIT_SEQ DESC
+		  ) a
+		) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<select id="selectComing" parameterType="ComingInfo" resultType="ComingInfo">
+		SELECT /* selectComing */
+			VISIT_SEQ,
+			VISIT_COMPANY,
+			VISIT_NAME,
+			TO_CHAR(VISIT_START_DATE, 'YYYY-MM-DD HH24:MI') VISIT_START_DATE,
+			TO_CHAR(VISIT_END_DATE, 'YYYY-MM-DD HH24:MI') VISIT_END_DATE,
+			MEET_DEPT_CODE,
+			MEET_DEPT_NAME,
+			MEET_SABUN,
+			MEET_NAME,
+			REG_DEPT_CODE,
+			REG_DEPT_NAME,
+			REG_SABUN,
+			REG_NAME,
+			TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE
+		FROM 
+			RYHR.RYHCF05MT
+		WHERE 1=1
+			<if test="visitSeq != null and visitSeq != ''">
+			AND VISIT_SEQ = #{visitSeq}
+			</if>
+	</select>
+	
+	<insert id="insertComing" parameterType="ComingInfo">
+		INSERT /* insertComing */
+		INTO RYHR.RYHCF05MT (
+			VISIT_SEQ,
+			VISIT_COMPANY,
+			VISIT_NAME,
+			VISIT_START_DATE,
+			MEET_DEPT_CODE,
+			MEET_DEPT_NAME,
+			MEET_SABUN,
+			MEET_NAME,
+			REG_DEPT_CODE,
+			REG_DEPT_NAME,
+			REG_SABUN,
+			REG_NAME,
+			REG_DATE,
+			UPD_DATE
+		) VALUES (
+			SEQ_RYHCF05MT.NEXTVAL,
+			#{visitCompany},
+			#{visitName},
+			TO_DATE(#{visitStartDate}, 'YYYY-MM-DD HH24:MI'),
+			#{meetDeptCode},
+			#{meetDeptName},
+			#{meetSabun},
+			#{meetName},
+			#{regDeptCode},
+			#{regDeptName},
+			#{regSabun},
+			#{regName},
+			SYSDATE,
+			SYSDATE
+		)
+	</insert>
+	
+	<update id="updateComing" parameterType="ComingInfo">
+		UPDATE /* updateComing */
+			RYHR.RYHCF05MT 
+		SET 
+			VISIT_COMPANY = #{visitCompany}, 
+			VISIT_NAME = #{visitName}, 
+			VISIT_START_DATE = TO_DATE(#{visitStartDate}, 'YYYY-MM-DD HH24:MI'),
+			MEET_DEPT_CODE = #{meetDeptCode}, 
+			MEET_DEPT_NAME = #{meetDeptName}, 
+			MEET_SABUN = #{meetSabun}, 
+			MEET_NAME = #{meetName}, 
+			UPD_DATE = SYSDATE
+		WHERE 
+			VISIT_SEQ = #{visitSeq} 
+			AND REG_SABUN = #{regSabun}
+	</update>
+	
+	<delete id="deleteComing" parameterType="ComingInfo">
+		DELETE /* deleteComing */
+		FROM RYHR.RYHCF05MT 
+		WHERE 
+			VISIT_SEQ = #{visitSeq} 
+			AND REG_SABUN = #{regSabun}
+	</delete>
+	
+	<select id="selectStatisticsByDept" parameterType="PageParam" resultType="TicketInfo">
+		SELECT /* selectStatisticsByDept */
+			S1.DEPT_CODE,
+			S1.DEPT_NAME,
+			NVL(S2.COUNT_HOUR2, 0) COUNT_HOUR2,
+			NVL(S2.COUNT_HOUR3, 0) COUNT_HOUR3,
+			NVL(S2.COUNT_HOUR4, 0) COUNT_HOUR4,
+			NVL(S2.COUNT_HOUR6, 0) COUNT_HOUR6,
+			NVL(S2.COUNT_HOUR24, 0) COUNT_HOUR24,
+			NVL(S2.TOTAL_COUNT, 0) TOTAL_COUNT
+		FROM
+				(SELECT
+				T1.DEPT_CODE,
+				T1.DEPT_PARCO,
+				LPAD(' └', 2*(LEVEL-1)) || T1.DEPT_NAME DEPT_NAME
+				FROM
+				(SELECT DEPT_CODE, 
+				CASE DEPT_CODE
+				    WHEN '0001' THEN NULL
+				    ELSE DEPT_PARCO
+				END DEPT_PARCO, 
+				DEPT_NAME
+				FROM RYHR.RYHZZ02MT 
+				WHERE STATE_GB = '1') T1
+				START WITH T1.DEPT_PARCO IS NULL 
+				CONNECT BY PRIOR T1.DEPT_CODE = T1.DEPT_PARCO) S1
+			LEFT OUTER JOIN
+				(SELECT
+				    REF_DEPT_CODE,
+				    SUM(COUNT_HOUR2) COUNT_HOUR2,
+				    SUM(COUNT_HOUR3) COUNT_HOUR3,
+				    SUM(COUNT_HOUR4) COUNT_HOUR4,
+				    SUM(COUNT_HOUR6) COUNT_HOUR6,
+				    SUM(COUNT_HOUR24) COUNT_HOUR24,
+				    SUM(COUNT_HOUR2 + COUNT_HOUR3 + COUNT_HOUR4 + COUNT_HOUR6 + COUNT_HOUR24) TOTAL_COUNT
+				FROM 
+				    RYHR.RYHCF04MT
+				WHERE 1=1
+				    AND STATUS = 'AA'
+				    AND IS_WEB_SALE = 'N'
+				    AND GIVE_DATE <![CDATA[>=]]> TO_DATE(#{startDate},'YYYY-MM-DD')
+					AND GIVE_DATE <![CDATA[<]]> TO_DATE(#{endDate},'YYYY-MM-DD') + 1
+				GROUP BY REF_DEPT_CODE) S2
+		ON S1.DEPT_CODE = S2.REF_DEPT_CODE
+		WHERE DEPT_CODE != '0001'
+	</select>
+	
+	<select id="selectStatisticsByTotal" parameterType="PageParam" resultType="TicketInfo">
+		SELECT /* selectStatisticsByDept */
+			ROWNUM RNUM,
+			a.*
+		FROM (
+			SELECT
+				PARKING_SEQ,
+				VISIT_SEQ,
+				VISIT_COMPANY,
+				VISIT_NAME,
+				VISIT_PURPOSE,
+				TO_CHAR(GIVE_DATE, 'YYYY-MM-DD HH24:MI') GIVE_DATE,
+				COUNT_HOUR2,
+				COUNT_HOUR3,
+				COUNT_HOUR4,
+				COUNT_HOUR6,
+				COUNT_HOUR24,
+				STATUS,
+				DEPT_CODE,
+				DEPT_NAME,
+				REG_SABUN,
+				REG_NAME,
+				TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI') REG_DATE,
+				TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI') UPD_DATE,
+				REF_DEPT_CODE,
+				REF_DEPT_NAME
+			FROM 
+				RYHR.RYHCF04MT
+			WHERE 1=1
+				AND STATUS = 'AA'
+				AND IS_WEB_SALE = 'N'
+				AND GIVE_DATE <![CDATA[>=]]> TO_DATE(#{startDate},'YYYY-MM-DD')
+				AND GIVE_DATE <![CDATA[<]]> TO_DATE(#{endDate},'YYYY-MM-DD') + 1
+			ORDER BY GIVE_DATE
+		) a
+	</select>
+	
+	<select id="selectStatisticsByVisitor" parameterType="PageParam" resultType="ComingInfo">
+		SELECT /* selectStatisticsByVisitor */
+		    ROWNUM RNUM,
+		    a.*
+		  FROM (
+		    SELECT 
+				t1.VISIT_SEQ,
+				t1.VISIT_COMPANY,
+				t1.VISIT_NAME,
+				TO_CHAR(t1.VISIT_START_DATE, 'YYYY-MM-DD HH24:MI') VISIT_START_DATE,
+				TO_CHAR(t1.VISIT_END_DATE, 'YYYY-MM-DD HH24:MI') VISIT_END_DATE,
+				t1.MEET_DEPT_CODE,
+				t1.MEET_DEPT_NAME,
+				t1.MEET_SABUN,
+				t1.MEET_NAME,
+				t1.REG_DEPT_CODE,
+				t1.REG_DEPT_NAME,
+				t1.REG_SABUN,
+				t1.REG_NAME,
+				TO_CHAR(t1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+				TO_CHAR(t1.UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE,
+				NVL2(t2.VISIT_SEQ,'Y','N') TICKET_CHECK
+			FROM 
+				RYHR.RYHCF05MT t1 LEFT OUTER JOIN RYHR.RYHCF04MT t2 ON t1.VISIT_SEQ = t2.VISIT_SEQ
+			WHERE 1=1
+				AND t1.VISIT_START_DATE <![CDATA[>=]]> TO_DATE(#{startDate},'YYYY-MM-DD')
+				AND t1.VISIT_START_DATE <![CDATA[<]]> TO_DATE(#{endDate},'YYYY-MM-DD') + 1
+			ORDER BY t1.VISIT_SEQ DESC
+		  ) a
+	</select>
+	
+	<select id="selectStatisticsByWebSale" parameterType="PageParam" resultType="TicketInfo">
+		SELECT /* selectStatisticsByWebSale */
+			ROWNUM RNUM,
+			a.*
+		FROM (
+			SELECT
+				PARKING_SEQ,
+				VISIT_SEQ,
+				VISIT_COMPANY,
+				VISIT_NAME,
+				VISIT_PURPOSE,
+				TO_CHAR(GIVE_DATE, 'YYYY-MM-DD HH24:MI') GIVE_DATE,
+				WEB_SALE_PRICE,
+				STATUS,
+				DEPT_CODE,
+				DEPT_NAME,
+				REG_SABUN,
+				REG_NAME,
+				TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI') REG_DATE,
+				TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI') UPD_DATE,
+				REF_DEPT_CODE,
+				REF_DEPT_NAME
+			FROM 
+				RYHR.RYHCF04MT
+			WHERE 1=1
+				AND STATUS = 'AA'
+				AND IS_WEB_SALE = 'Y'
+				AND GIVE_DATE <![CDATA[>=]]> TO_DATE(#{startDate},'YYYY-MM-DD')
+				AND GIVE_DATE <![CDATA[<]]> TO_DATE(#{endDate},'YYYY-MM-DD') + 1
+			ORDER BY GIVE_DATE
+		) a
+	</select>
+	
+</mapper>

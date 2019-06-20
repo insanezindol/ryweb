@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.ScheduleMapper_Ryhr">
+	
+	<sql id="selectScheduleListWhere">
+		<if test="s_scheduleType != null and s_scheduleType != ''">
+			AND t1.SCHEDULE_TYPE = #{s_scheduleType}
+		</if>
+		<if test="s_scheduleName != null and s_scheduleName != ''">
+			AND LOWER(t1.SCHEDULE_NAME) LIKE '%'||LOWER(#{s_scheduleName})||'%'
+		</if>
+		<if test="(startDate != null and startDate != '') and (endDate != null and endDate != '')">
+			AND (t1.SCHEDULE_STARTTIME <![CDATA[>=]]> TO_DATE(#{startDate},'YYYY-MM-DD HH24:MI') AND t1.SCHEDULE_ENDTIME <![CDATA[<=]]> TO_DATE(#{endDate},'YYYY-MM-DD HH24:MI') )
+		</if>
+		<if test="s_remark != null and s_remark != ''">
+			AND LOWER(t1.SCHEDULE_REMARK) LIKE '%'||LOWER(#{s_remark})||'%'
+		</if>
+		<if test="s_regName != null and s_regName != ''">
+			AND t4.ATTENDANT_NAME LIKE '%'||#{s_regName}||'%'
+		</if>
+	</sql>
+	
+	<select id="selectScheduleListCount" parameterType="PageParam" resultType="int">
+		SELECT /* selectScheduleListCount */
+			COUNT(1)
+	    FROM (
+		  	SELECT 
+				t1.SCHEDULE_SEQ,
+				t1.SCHEDULE_TYPE,
+				t1.SCHEDULE_NAME,
+				TO_CHAR(t1.SCHEDULE_STARTTIME, 'YYYY-MM-DD HH24:MI') SCHEDULE_STARTTIME,
+				TO_CHAR(t1.SCHEDULE_ENDTIME, 'YYYY-MM-DD HH24:MI') SCHEDULE_ENDTIME,
+				t1.SCHEDULE_REMARK,
+				t1.SCHEDULE_STATUS,
+				t1.REG_SABUN,
+				t1.REG_NAME,
+				TO_CHAR(t1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+				t1.UPD_SABUN,
+				t1.UPD_NAME,
+				TO_CHAR(t1.UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE,
+				t2.DEPT_CODE,
+				t3.DEPT_NAME,
+                t4.ATTENDANT_NAME
+			FROM 
+				RYHR.RYHCF17MT t1
+				INNER JOIN RYHR.RYHZZ01MT t2 ON t1.REG_SABUN = t2.SABUN
+				INNER JOIN RYHR.RYHZZ02MT t3 ON t2.DEPT_CODE = t3.DEPT_CODE
+				LEFT OUTER JOIN (SELECT
+                                    t1.SCHEDULE_SEQ,
+                                    LISTAGG(t2.KNAME, ', ') WITHIN GROUP (ORDER BY t1.ORDER_SEQ) as ATTENDANT_NAME
+                                FROM 
+                                    RYHR.RYHCF18MT t1, RYHR.RYHZZ01MT t2
+                                WHERE 1=1
+                                    AND t1.ATTENDANT_SABUN = t2.SABUN
+                                    AND t1.HIDDEN_GB = 'N'
+                                GROUP BY t1.SCHEDULE_SEQ) t4 ON t1.SCHEDULE_SEQ = t4.SCHEDULE_SEQ
+			WHERE 1=1
+				<include refid="selectScheduleListWhere" />
+		  ) a
+		WHERE 1=1
+	</select>
+	
+	<select id="selectScheduleList" parameterType="PageParam" resultType="ScheduleInfo">
+		SELECT /* selectScheduleList */
+			b.*
+		FROM (
+		  SELECT
+		    ROWNUM RNUM,
+		    a.*
+		  FROM (
+		  	SELECT 
+				t1.SCHEDULE_SEQ,
+				t1.SCHEDULE_TYPE,
+				DECODE(t1.SCHEDULE_TYPE, '10','휴가', '20','출장', '30','교육', '40','외근', '50','기타') SCHEDULE_TYPE_NAME,
+				t1.SCHEDULE_NAME,
+				TO_CHAR(t1.SCHEDULE_STARTTIME, 'YYYY-MM-DD HH24:MI') SCHEDULE_STARTTIME,
+				TO_CHAR(t1.SCHEDULE_ENDTIME, 'YYYY-MM-DD HH24:MI') SCHEDULE_ENDTIME,
+				t1.SCHEDULE_REMARK,
+				t1.SCHEDULE_STATUS,
+				t1.REG_SABUN,
+				t1.REG_NAME,
+				TO_CHAR(t1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+				t1.UPD_SABUN,
+				t1.UPD_NAME,
+				TO_CHAR(t1.UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE,
+				t2.DEPT_CODE,
+				t3.DEPT_NAME,
+                t4.ATTENDANT_NAME
+			FROM 
+				RYHR.RYHCF17MT t1
+				INNER JOIN RYHR.RYHZZ01MT t2 ON t1.REG_SABUN = t2.SABUN
+				INNER JOIN RYHR.RYHZZ02MT t3 ON t2.DEPT_CODE = t3.DEPT_CODE
+				LEFT OUTER JOIN (SELECT
+                                    t1.SCHEDULE_SEQ,
+                                    LISTAGG(t2.KNAME, ', ') WITHIN GROUP (ORDER BY t1.ORDER_SEQ) as ATTENDANT_NAME
+                                FROM 
+                                    RYHR.RYHCF18MT t1, RYHR.RYHZZ01MT t2
+                                WHERE 1=1
+                                    AND t1.ATTENDANT_SABUN = t2.SABUN
+                                    AND t1.HIDDEN_GB = 'N'
+                                GROUP BY t1.SCHEDULE_SEQ) t4 ON t1.SCHEDULE_SEQ = t4.SCHEDULE_SEQ
+			WHERE 1=1
+				<include refid="selectScheduleListWhere" />
+			ORDER BY t1.SCHEDULE_STARTTIME DESC
+		  ) a
+		) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<select id="selectSchedule" parameterType="ScheduleInfo" resultType="ScheduleInfo">
+	    SELECT /* selectSchedule */
+	    	t1.SCHEDULE_SEQ,
+	    	t1.SCHEDULE_TYPE,
+	    	DECODE(t1.SCHEDULE_TYPE, '10','휴가', '20','출장', '30','교육', '40','외근', '50','기타') SCHEDULE_TYPE_NAME,
+			t1.SCHEDULE_NAME,
+			TO_CHAR(t1.SCHEDULE_STARTTIME, 'YYYY-MM-DD HH24:MI') SCHEDULE_STARTTIME,
+			TO_CHAR(t1.SCHEDULE_ENDTIME, 'YYYY-MM-DD HH24:MI') SCHEDULE_ENDTIME,
+			t1.SCHEDULE_REMARK,
+			t1.SCHEDULE_STATUS,
+			t1.REG_SABUN,
+			t1.REG_NAME,
+			TO_CHAR(t1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			t1.UPD_SABUN,
+			t1.UPD_NAME,
+			TO_CHAR(t1.UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE,
+			t2.DEPT_CODE,
+			t3.DEPT_NAME
+		FROM 
+			RYHR.RYHCF17MT t1
+			INNER JOIN RYHR.RYHZZ01MT t2 ON t1.REG_SABUN = t2.SABUN
+			INNER JOIN RYHR.RYHZZ02MT t3 ON t2.DEPT_CODE = t3.DEPT_CODE
+		WHERE 1=1
+			AND t1.SCHEDULE_SEQ = #{scheduleSeq}
+	</select>
+	
+	<insert id="insertSchedule" parameterType="ScheduleInfo">
+		INSERT /* insertSchedule */
+		INTO RYHR.RYHCF17MT (
+			SCHEDULE_SEQ,
+	    	SCHEDULE_TYPE,
+			SCHEDULE_NAME,
+			SCHEDULE_STARTTIME,
+			SCHEDULE_ENDTIME,
+			SCHEDULE_REMARK,
+			SCHEDULE_STATUS,
+			REG_SABUN,
+			REG_NAME,
+			REG_DATE,
+			UPD_SABUN,
+			UPD_NAME,
+			UPD_DATE
+		) VALUES (
+			SEQ_RYHCF17MT.NEXTVAL,
+			#{scheduleType},
+			#{scheduleName},
+			TO_DATE(#{scheduleStarttime}, 'YYYY-MM-DD HH24:MI'),
+			TO_DATE(#{scheduleEndtime}, 'YYYY-MM-DD HH24:MI'),
+			#{scheduleRemark},
+			#{scheduleStatus},
+			#{regSabun},
+			#{regName},
+			SYSDATE,
+			#{updSabun},
+			#{updName},
+			SYSDATE
+		)
+		<selectKey keyProperty="currseq" resultType="long" order="AFTER">
+			SELECT SEQ_RYHCF17MT.CURRVAL FROM DUAL
+		</selectKey>
+	</insert>
+	
+	<update id="updateSchedule" parameterType="ScheduleInfo">
+		UPDATE /* updateSchedule */
+			RYHR.RYHCF17MT 
+		SET 
+	    	SCHEDULE_TYPE = #{scheduleType},
+			SCHEDULE_NAME = #{scheduleName},
+			SCHEDULE_STARTTIME = TO_DATE(#{scheduleStarttime}, 'YYYY-MM-DD HH24:MI'),
+			SCHEDULE_ENDTIME = TO_DATE(#{scheduleEndtime}, 'YYYY-MM-DD HH24:MI'),
+			SCHEDULE_REMARK = #{scheduleRemark},
+			SCHEDULE_STATUS = #{scheduleStatus},
+			UPD_SABUN = #{updSabun},
+			UPD_NAME = #{updName},
+			UPD_DATE = SYSDATE
+		WHERE 
+			SCHEDULE_SEQ = #{scheduleSeq}
+	</update>
+	
+	<delete id="deleteSchedule" parameterType="ScheduleInfo">
+		DELETE /* deleteSchedule */
+		FROM RYHR.RYHCF17MT
+		WHERE SCHEDULE_SEQ = #{scheduleSeq}
+	</delete>
+	
+	<select id="selectScheduleTableList" parameterType="PageParam" resultType="DateTimePickerInfo">
+		SELECT /* selectScheduleTableList */
+			a.SCHEDULE_SEQ ID,
+			'['||SCHEDULE_TYPE_NAME||']'||a.ATTENDANT_NAME||' ('||a.SCHEDULE_NAME||')' TITLE,
+			TO_CHAR(a.SCHEDULE_STARTTIME, 'YYYY-MM-DD HH24:MI') "START",
+			TO_CHAR(a.SCHEDULE_ENDTIME, 'YYYY-MM-DD HH24:MI') "END",
+			a.SCHEDULE_TYPE TYPE,
+			'['||SCHEDULE_TYPE_NAME||']'||a.ATTENDANT_NAME||' ('||a.SCHEDULE_NAME||')' TOOLTIP
+		FROM (
+			SELECT 
+				t1.SCHEDULE_SEQ,
+				t1.SCHEDULE_TYPE,
+				DECODE(t1.SCHEDULE_TYPE, '10','휴가', '20','출장', '30','교육', '40','외근', '50','기타') SCHEDULE_TYPE_NAME,
+				t1.SCHEDULE_NAME,
+				t1.SCHEDULE_STARTTIME,
+				t1.SCHEDULE_ENDTIME,
+				t1.SCHEDULE_REMARK,
+				t1.SCHEDULE_STATUS,
+                t4.ATTENDANT_NAME
+			FROM 
+				RYHR.RYHCF17MT t1
+				INNER JOIN RYHR.RYHZZ01MT t2 ON t1.REG_SABUN = t2.SABUN
+				LEFT OUTER JOIN (SELECT
+                                    t1.SCHEDULE_SEQ,
+                                    LISTAGG(t2.KNAME, ', ') WITHIN GROUP (ORDER BY t1.ORDER_SEQ) as ATTENDANT_NAME
+                                FROM 
+                                    RYHR.RYHCF18MT t1, RYHR.RYHZZ01MT t2
+                                WHERE 1=1
+                                    AND t1.ATTENDANT_SABUN = t2.SABUN
+                                    AND t1.HIDDEN_GB = 'N'
+                                GROUP BY t1.SCHEDULE_SEQ) t4 ON t1.SCHEDULE_SEQ = t4.SCHEDULE_SEQ
+			WHERE 1=1
+				AND (t1.SCHEDULE_STARTTIME <![CDATA[>=]]> TO_DATE(#{startDate},'YYYY-MM-DD') AND t1.SCHEDULE_ENDTIME <![CDATA[<=]]> TO_DATE(#{endDate},'YYYY-MM-DD') )
+		) a
+		WHERE 1=1
+	</select>
+	
+	<select id="selectScheduleTimeTableList" parameterType="PageParam" resultType="DateTimePickerInfo">
+		SELECT /* selectScheduleTimeTableList */
+		    B.SCHEDULE_SEQ||A.ATTENDANT_SABUN ID,
+		    '['||DECODE(B.SCHEDULE_TYPE, '10','휴가', '20','출장', '30','교육', '40','외근', '50','기타')||'] '||B.SCHEDULE_NAME TITLE,
+		    D.DEPT_NAME || ' ' || C.KNAME TYPE,
+		    TO_CHAR(B.SCHEDULE_STARTTIME, 'YYYY-MM-DD HH24:MI:SS') "START",
+			TO_CHAR(B.SCHEDULE_ENDTIME, 'YYYY-MM-DD HH24:MI:SS') "END",
+		    B.SCHEDULE_REMARK TOOLTIP
+		FROM 
+		    RYHR.RYHCF18MT A
+		    INNER JOIN RYHR.RYHCF17MT B ON A.SCHEDULE_SEQ = B.SCHEDULE_SEQ
+		    INNER JOIN RYHR.RYHZZ01MT C ON A.ATTENDANT_SABUN = C.SABUN
+		    INNER JOIN RYHR.RYHZZ02MT D ON C.DEPT_CODE = D.DEPT_CODE
+		WHERE 1=1
+		    AND (TO_CHAR(B.SCHEDULE_STARTTIME,'YYYY-MM-DD') = #{sendDate} OR TO_CHAR(B.SCHEDULE_ENDTIME,'YYYY-MM-DD') = #{sendDate})
+		ORDER BY D.INNER_CD, C.POSIT_CD
+	</select>
+	
+	<select id="selectAttendantList" parameterType="AttendantInfo" resultType="AttendantInfo">
+		SELECT /* selectAttendantList */
+		    t1.SCHEDULE_SEQ,
+		    t1.ATTENDANT_SABUN,
+		    t2.KNAME ATTENDANT_NAME,
+		    t1.ATTENDANT_TYPE,
+		    t1.ATTENDANT_DEPT,
+		    t3.DEPT_NAME ATTENDANT_DEPT_NAME,
+		    t1.REG_SABUN,
+		    TO_CHAR(t1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+		    t1.ORDER_SEQ
+		FROM 
+			RYHR.RYHCF18MT t1, RYHR.RYHZZ01MT t2, RYHR.RYHZZ02MT t3
+		WHERE 1=1
+		    AND t1.SCHEDULE_SEQ = #{scheduleSeq}
+		    AND t1.ATTENDANT_TYPE = #{attendantType}
+		    AND t1.ATTENDANT_SABUN = t2.SABUN
+		    AND t1.ATTENDANT_DEPT = t3.DEPT_CODE
+		    AND t3.STATE_GB = '1'
+		    AND t1.HIDDEN_GB = 'N'
+		ORDER BY
+			t1.ORDER_SEQ
+	</select>
+	
+	<insert id="insertAttendant" parameterType="AttendantInfo">
+		INSERT /* insertAttendant */
+		INTO RYHR.RYHCF18MT (
+			SCHEDULE_SEQ,
+			ATTENDANT_SABUN,
+			ATTENDANT_TYPE,
+			ATTENDANT_DEPT,
+			REG_SABUN,
+			REG_DATE,
+			ORDER_SEQ,
+			HIDDEN_GB
+		) VALUES (
+			#{scheduleSeq},
+			#{attendantSabun},
+			#{attendantType},
+			#{attendantDept},
+			#{regSabun},
+			SYSDATE,
+			#{orderSeq},
+			#{hiddenGb}
+		)
+	</insert>
+	
+	<delete id="deleteAttendant" parameterType="AttendantInfo">
+		DELETE /* deleteAttendant */
+		FROM RYHR.RYHCF18MT 
+		WHERE SCHEDULE_SEQ = #{scheduleSeq}
+	</delete>
+	
+</mapper>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryacc.IttMapper_Ryacc">
+	
+	<select id="selectGroupwareChitByRyacc" parameterType="GroupwareExtInfo" resultType="GroupwareExtInfo">
+		SELECT /* selectGroupwareChitByRyacc */
+			A.TS_YY,
+			A.TS_NO,
+			A.ISS_UER,
+			B.KNAME,
+			A.TS_STATUS,
+			A.GW_ICHE_DATETIME,
+			A.GW_STATUS
+		FROM RYACC.RYATS01MT A
+			INNER JOIN RYHR.RYHZZ01MT B ON A.ISS_UER = B.SABUN
+		WHERE 1=1 
+			AND TS_YY = #{tsYy} AND TS_NO = #{tsNo}
+	</select>
+	
+	<update id="updateGroupwareChitByRyacc" parameterType="GroupwareExtInfo">
+		UPDATE /* updateGroupwareChitByRyacc */
+			RYACC.RYATS01MT
+		SET GW_STATUS = NULL, GW_ICHE_DATETIME = NULL
+		WHERE 1=1 and TS_YY = #{tsYy} AND TS_NO = #{tsNo}
+	</update>
+	
+</mapper>

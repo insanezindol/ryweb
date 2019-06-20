@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryxrs.IttMapper_Ryxrs">
+	
+	<select id="selectMigrationInfoCnt" parameterType="BtsInfo" resultType="BtsInfo">
+		SELECT /* selectMigrationInfoCnt */
+			COUNT(1) CNT
+		FROM
+			RYXRS.BTS_SLITEMTAKINGOUT_ETC
+		WHERE 1=1
+			AND OUTDATE = REPLACE(#{outdate},'-','')
+	</select>
+	
+	<select id="selectBtsInfo" resultType="BtsInfo">
+		SELECT /* selectBtsInfo */
+			OUTDATE,
+			CUSTCODE,
+			ECUSTCODE,
+			ITEMCODE,
+			OUTQTY,
+			ORDERNO,
+			SEQ,
+			SERIALNO,
+			AGG1,
+			AGG2,
+			AGG4,
+			JUMN_NO,
+			JPM_SEQ,
+			EDP_DATE,
+			UPD_DATE,
+			READ_DATE
+		FROM
+			RYXRS.BTS_SLITEMTAKINGOUT_ETC
+		WHERE 1=1
+		ORDER BY OUTDATE DESC
+	</select>
+	
+	<insert id="insertBtsInfo" parameterType="BtsInfo">
+		INSERT /* insertComing */
+		INTO RYXRS.BTS_SLITEMTAKINGOUT_ETC (
+			OUTDATE, 
+			CUSTCODE, 
+			ECUSTCODE, 
+			ITEMCODE, 
+			OUTQTY,	
+			ORDERNO, 
+			SEQ, 
+			SERIALNO, 
+			AGG1, 
+			AGG2, 
+			AGG4, 
+			JUMN_NO, 
+			JPM_SEQ, 
+			EDP_DATE 
+		) VALUES (
+			#{outdate},
+			#{custcode,jdbcType=VARCHAR},
+			#{ecustcode,jdbcType=VARCHAR},
+			#{itemcode,jdbcType=VARCHAR},
+			#{outqty,jdbcType=INTEGER},
+			#{orderno,jdbcType=VARCHAR},
+			#{seq},
+			#{serialno,jdbcType=VARCHAR},
+			#{agg1,jdbcType=VARCHAR},
+			#{agg2,jdbcType=VARCHAR},
+			#{agg4,jdbcType=VARCHAR},
+			#{jumnNo,jdbcType=VARCHAR},
+			#{jpmSeq},
+			TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')
+		)
+	</insert>
+	
+	<delete id="deleteBtsInfo" parameterType="BtsInfo">
+		DELETE /* deleteBtsInfo */
+		FROM RYXRS.BTS_SLITEMTAKINGOUT_ETC
+		WHERE OUTDATE = #{outdate}
+	</delete>
+	
+</mapper>

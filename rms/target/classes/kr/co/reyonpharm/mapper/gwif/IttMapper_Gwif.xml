@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.gwif.IttMapper_Gwif">
+	
+	<select id="selectGroupwareChitByGwif" resultType="GroupwareExtInfo">
+		SELECT /* selectGroupwareChitByGwif */
+			APPRO_KEY,
+			APPRO_STATE,
+			GW_TO_MIS_STATUS,
+			GW_TO_MIS_DATETIME
+		FROM GWIF.dbo.tblMisAppro
+		WHERE APPRO_KEY = #{tsYy} + '-' + #{tsNo}
+	</select>
+	
+	<delete id="deleteGroupwareChitByRyacc" parameterType="GroupwareExtInfo">
+		DELETE /* deleteGroupwareChitByRyacc */
+		FROM GWIF.dbo.tblMisAppro
+		WHERE APPRO_KEY = #{tsYy} + '-' + #{tsNo}
+	</delete>
+	
+</mapper>

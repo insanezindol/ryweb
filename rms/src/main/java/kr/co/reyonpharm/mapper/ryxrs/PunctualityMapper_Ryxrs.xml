@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryxrs.PunctualityMapper_Ryxrs">
+	
+	<resultMap id="resultMap" type="hashmap"/>
+	
+	<select id="selectAdtCapsList" statementType="CALLABLE" parameterType="hashmap">
+		{ CALL ADT_CAPS_TENTER_PROC (
+			#{workGbn, jdbcType=VARCHAR, mode=IN},
+			#{startDate, jdbcType=VARCHAR, mode=IN},
+			#{endDate, jdbcType=VARCHAR, mode=IN},
+			#{deptCode, jdbcType=VARCHAR, mode=IN},
+			#{searchSabun, jdbcType=VARCHAR, mode=IN},
+			#{loginSabun, jdbcType=VARCHAR, mode=IN},
+			#{resultList, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=resultMap} )
+		}
+	</select>
+	
+	<select id="selectPunctualityList" parameterType="PunctualityInfo" resultType="PunctualityInfo">
+		SELECT /* selectPunctualityList */
+			B.DEPT_CODE,
+			B.DEPT_NAME,
+			A.E_DEPT CAPS_DEPT,
+			B.SABUN,
+			NVL(B.KNAME,A.E_NAME) KNAME,
+			B.POS_LOG,    
+			CASE WHEN A.E_DATE IS NULL THEN '' 
+				ELSE SUBSTR(A.E_DATE,1,4)||'/'||SUBSTR(A.E_DATE,5,2)||'/'||SUBSTR(A.E_DATE,7,2) 
+			END WORK_DATE,
+			CASE WHEN B.IN_DATE IS NULL THEN '' 
+				ELSE SUBSTR(B.IN_DATE,1,4)||'/'||SUBSTR(B.IN_DATE,5,2)||'/'||SUBSTR(B.IN_DATE,7,2) 
+			END IN_DATE,
+			B.ACT_YN,
+			CASE WHEN A.S_WORK IS NULL THEN '' 
+				ELSE DECODE(A.S_WORK,'999999','',SUBSTR(A.S_WORK,1,2)||':'||SUBSTR(A.S_WORK,3,2)||':'||SUBSTR(A.S_WORK,5,2))
+			END START_WORK,
+			CASE WHEN A.E_WORK IS NULL THEN '' 
+				ELSE DECODE(A.E_WORK,'000000','',SUBSTR(A.E_WORK,1,2)||':'||SUBSTR(A.E_WORK,3,2)||':'||SUBSTR(A.E_WORK,5,2))
+			END END_WORK,
+			C.BIGO
+		FROM (
+			SELECT 
+				A.E_ID, A.E_DEPT, A.E_NAME, A.E_DATE, MIN(A.S_WORK) S_WORK, MAX(A.E_WORK) E_WORK
+			FROM (
+				SELECT
+					E_ID, E_DEPT, E_NAME, E_DATE, MIN(S_WORK) S_WORK, MAX(E_WORK) E_WORK
+				FROM (
+					SELECT 
+						SUBSTR(E_ID,5,8) E_ID, MAX(E_DEPT) E_DEPT, MAX(E_NAME) E_NAME, E_DATE, MAX(E_TIME) S_WORK, '000000' E_WORK
+					FROM
+						RYXRS.TENTER
+					WHERE 1 = 1
+						AND E_DATE <![CDATA[>=]]> #{startDate}
+						AND E_DATE <![CDATA[<=]]> #{endDate}
+						AND E_MODE IN('1') -- 출근
+					GROUP BY SUBSTR(E_ID,5,8), E_DATE, '000000'    
+					UNION ALL
+					SELECT
+						SUBSTR(E_ID,5,8) E_ID, MAX(E_DEPT) E_DEPT, MAX(E_NAME) E_NAME, E_DATE, MIN(E_TIME) S_WORK, '000000' E_WORK
+					FROM
+						RYXRS.TENTER
+					WHERE 1 = 1
+                        AND E_DATE <![CDATA[>=]]> #{startDate}
+                        AND E_DATE <![CDATA[<=]]> #{endDate}
+                        AND E_MODE IN('5') -- 출입 
+                    GROUP BY SUBSTR(E_ID,5,8), E_DATE, '000000'  
+                    )
+				GROUP BY E_ID, E_DEPT, E_NAME, E_DATE
+				UNION ALL
+				SELECT 
+					SUBSTR(E_ID,5,8) E_ID, MAX(E_DEPT) E_DEPT, MAX(E_NAME) E_NAME, E_DATE, '999999' S_WORK, MAX(E_TIME) E_WORK
+				FROM
+					RYXRS.TENTER
+				WHERE 1 = 1
+					AND E_DATE <![CDATA[>=]]> #{startDate}
+					AND E_DATE <![CDATA[<=]]> #{endDate}
+					AND E_MODE IN('2') -- 퇴근        
+				GROUP BY SUBSTR(E_ID,5,8), E_DATE, '999999'
+                ) A
+			GROUP BY A.E_ID, A.E_DEPT, A.E_NAME, A.E_DATE
+			) A, 
+            (
+				SELECT
+					C.IN_DATE, C.ACT_YN, B.DEPT_CODE, B.DEPT_NAME, B.INNER_CD, B.SABUN, B.KNAME, B.POSIT_CD, B.POS_LOG, B.REG_CODE 
+				FROM (
+					SELECT
+						B.DEPT_CODE, C.DEPT_NAME, C.INNER_CD, B.SABUN, B.KNAME, B.POSIT_CD, D.POS_LOG, C.REG_CODE
+					FROM RYHR.RYHZZ01MT B, ryhr.ryhAA20MT D,
+		<if test="type != null and type != ''">
+			<choose>
+				<when test="type == 'A'.toString()">
+					(Select * FROM RYHR.RYHZZ02MT) C -- 전사조회
+				</when>
+				<when test="type == 'B'.toString()">
+					(Select * FROM RYHR.RYHZZ02MT Connect By Prior Dept_CODE = DEPT_PARCO start with Dept_CODE = '7000') C -- 생산본부
+	            </when>
+	            <otherwise>
+					(Select DISTINCT DEPT_CODE, DEPT_NAME, INNER_CD, REG_CODE FROM RYHR.RYHZZ02MT
+						Connect By Prior Dept_CODE = DEPT_PARCO start with Dept_CODE IN ( 
+							SELECT DISTINCT DEPT_CODE FROM RYHR.RYHAH25IT where  (sabun = #{loginSabun} OR sabun_affair = #{loginSabun}) )
+					) C -- 인력시스템 부서별 승인권한자 테이블
+				</otherwise>
+			</choose>
+		</if>
+				WHERE B.DEPT_CODE = C.DEPT_CODE
+					AND   B.POSIT_CD = D.POSIT_CD(+)
+					AND   NVL(B.ENTER_DAY, '00000101') <![CDATA[<=]]> #{startDate}
+					AND   NVL(B.RETIRE_DAY,'99991231') <![CDATA[>=]]> #{endDate}
+					) B,
+					(
+					SELECT A.IN_DATE, B.ACT_YN -- 일자별 근무여부 조회 
+					FROM ( 
+						SELECT TO_CHAR(TO_DATE(#{startDate}, 'YYYYMMDD') + LEVEL - 1, 'YYYYMMDD') AS IN_DATE
+						FROM   DUAL CONNECT BY LEVEL <![CDATA[<=]]> TO_DATE(#{endDate}, 'YYYYMMDD') - TO_DATE(#{startDate}, 'YYYYMMDD') + 1 ) A,
+						(select ACT_DATE, NVL(ACT_YN,'Y') ACT_YN From rysd.rysca01mt) B -- 영업시스템.근무일자 관리 
+					WHERE A.IN_DATE = B.ACT_DATE 
+					) C
+				ORDER BY B.DEPT_CODE, B.DEPT_NAME, B.INNER_CD, B.SABUN, B.KNAME, C.IN_DATE 
+			) B,
+            (
+                SELECT
+                    SABUN,
+                    YMD,
+                    BIGO
+                FROM (SELECT 
+                            T2.SABUN,
+                            T1.YMD,
+                            CASE WHEN YMD <![CDATA[>=]]> T2.STARTDATE AND YMD <![CDATA[<=]]> T2.ENDDATE THEN BIGO ELSE '' END BIGO
+                        FROM
+                            ( 
+                            SELECT 
+                            	TO_CHAR(YMD, 'YYYYMMDD') YMD 
+                            FROM(
+	                            SELECT TO_DATE (#{startDate}, 'YYYYMMDD')+(LEVEL - 1) YMD
+	                            FROM DUAL
+	                            CONNECT BY TO_DATE (#{startDate}, 'YYYYMMDD')+(LEVEL-1) <![CDATA[<=]]> TO_DATE (#{endDate}, 'YYYYMMDD')
+	                            ) 
+                            ) T1,
+                            ( SELECT
+                                SABUN,
+                                TO_CHAR(STARTDATE, 'YYYYMMDD') STARTDATE,
+                                TO_CHAR(ENDDATE, 'YYYYMMDD') ENDDATE,
+                                HOLIDAY_GBN,
+                                DECODE(HOLIDAY_GBN,'1','연차','2','반차(오전)','3','반차(오후)','4','특별휴가','5','생리휴가','6','장기근속휴가','7','병가','8','기타') BIGO
+                            FROM
+                                RYHR.RYHCH01IT
+                            WHERE 1=1
+                                AND GW_STATUS IN ('0','1') 
+                            ) T2
+                        WHERE 1=1)
+                WHERE 1=1
+                	AND BIGO IS NOT NULL
+            ) C
+		WHERE  1=1
+			AND    B.IN_DATE = A.E_DATE(+)
+			AND    B.SABUN = A.E_ID(+) 
+			AND    B.SABUN = C.SABUN(+)
+	        AND    B.IN_DATE = C.YMD(+)
+			<if test="deptName != null and deptName != ''">
+			AND UPPER(B.DEPT_NAME) LIKE '%'||UPPER(#{deptName})||'%'
+			</if>
+			<if test="capsDept != null and capsDept != ''">
+			AND UPPER(A.E_DEPT) LIKE '%'||UPPER(#{capsDept})||'%'
+			</if>
+			<if test="kname != null and kname != ''">
+			AND NVL(B.KNAME,A.E_NAME) LIKE '%'||#{kname}||'%'
+			</if>
+			<if test="startWorkNull == 'true'">
+			AND (A.S_WORK IS NULL OR A.S_WORK = '999999')
+			</if>
+			<if test="startWorkAfter == 'true'">
+			AND (A.S_WORK != '999999' AND A.S_WORK <![CDATA[>]]> '083000')
+			</if>
+			<if test="endWorkAfter == 'true'">
+			AND (A.E_WORK != '000000' AND A.E_WORK <![CDATA[>]]> '180000')
+			</if>
+		ORDER BY B.IN_DATE, B.INNER_CD, B.POSIT_CD, B.POS_LOG, B.KNAME
+	</select>
+	
+</mapper>

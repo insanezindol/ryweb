@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.RealestateMapper_Ryhr">
+	
+	<sql id="selectContractListWhere">
+		<if test="s_divide != null and s_divide != ''">
+			<choose>
+				<when test="s_divide == '임대'">
+			AND PAYMENT IN ('월세' , '연납', '전세')			
+				</when>
+				<when test="s_divide == '보유'">
+			AND PAYMENT IN ('보유')			
+				</when>
+			</choose>
+		</if>
+		<if test="s_gubun != null and s_gubun != ''">
+			AND SAUP_GUBUN = #{s_gubun}
+		</if>
+		<if test="s_user != null and s_user != ''">
+			AND USERNAME LIKE '%'||#{s_user}||'%'
+		</if>
+		<if test="(startDate != null and startDate != '') and (endDate != null and endDate != '')">
+			AND START_DATE <![CDATA[>=]]> TO_DATE(#{startDate},'YYYY-MM-DD') AND END_DATE <![CDATA[<]]> TO_DATE(#{endDate},'YYYY-MM-DD') + 1
+		</if>
+		<if test="s_paid != null and s_paid != ''">
+			AND PAYMENT = #{s_paid}
+		</if>
+		<if test="s_status != null and s_status != '' and s_status != 'ALL'">
+			AND STATUS = #{s_status}
+		</if>
+	</sql>
+	
+	<select id="selectContractListCount" parameterType="PageParam" resultType="int">
+		SELECT /* selectContractListCount */
+			COUNT(1)
+		FROM (
+			SELECT
+				CONTRACT_SEQ,
+				SAUP_GUBUN,
+				DIVISION,
+				USERNAME,
+				TO_CHAR(START_DATE, 'YYYY-MM-DD') START_DATE,
+				TO_CHAR(END_DATE, 'YYYY-MM-DD') END_DATE,
+				ROAD_ADDR,
+				JIBUN_ADDR,
+				DETAIL_ADDR,
+				SINM,
+				ZIPNO,
+				PAYMENT,
+				DEPOSIT,
+				RENT,
+				ADMINISTRATIVE_EXPENSES,
+				REMARKS,
+				ATTACH_FILEPATH,
+				ATTACH_FILENAME,
+				ATTACH_FILESIZE,
+				STATUS,
+				REG_SABUN,
+				REG_NAME,
+				TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+				UPD_SABUN,
+				UPD_NAME,
+				TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE
+			FROM RYHR.RYHCF08MT
+			WHERE 1=1
+				<include refid="selectContractListWhere" />
+			) a
+	</select>
+	
+	<select id="selectContractList" parameterType="PageParam" resultType="ContractInfo">
+		SELECT /* selectContractList */
+			b.*
+		FROM (
+			SELECT
+				ROWNUM RNUM,
+				a.*
+			FROM (
+				SELECT
+					CONTRACT_SEQ,
+					SAUP_GUBUN,
+					DIVISION,
+					USERNAME,
+					TO_CHAR(START_DATE, 'YYYY-MM-DD') START_DATE,
+					TO_CHAR(END_DATE, 'YYYY-MM-DD') END_DATE,
+					ROAD_ADDR,
+					JIBUN_ADDR,
+					DETAIL_ADDR,
+					SINM,
+					ZIPNO,
+					PAYMENT,
+					DEPOSIT,
+					RENT,
+					ADMINISTRATIVE_EXPENSES,
+					REMARKS,
+					ATTACH_FILEPATH,
+					ATTACH_FILENAME,
+					ATTACH_FILESIZE,
+					STATUS,
+					REG_SABUN,
+					REG_NAME,
+					TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+					UPD_SABUN,
+					UPD_NAME,
+					TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE
+				FROM RYHR.RYHCF08MT
+				WHERE 1=1
+					<include refid="selectContractListWhere" />
+				ORDER BY END_DATE DESC, SAUP_GUBUN, DIVISION, USERNAME
+				) a
+			) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<select id="selectContract" parameterType="ContractInfo" resultType="ContractInfo">
+		SELECT /* selectContract */
+			CONTRACT_SEQ,
+			SAUP_GUBUN,
+			DIVISION,
+			USERNAME,
+			TO_CHAR(START_DATE, 'YYYY-MM-DD') START_DATE,
+			TO_CHAR(END_DATE, 'YYYY-MM-DD') END_DATE,
+			ROAD_ADDR,
+			JIBUN_ADDR,
+			DETAIL_ADDR,
+			SINM,
+			ZIPNO,
+			PAYMENT,
+			DEPOSIT,
+			RENT,
+			ADMINISTRATIVE_EXPENSES,
+			REMARKS,
+			ATTACH_FILEPATH,
+			ATTACH_FILENAME,
+			ATTACH_FILESIZE,
+			STATUS,
+			REG_SABUN,
+			REG_NAME,
+			TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			UPD_SABUN,
+			UPD_NAME,
+			TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE,
+			POSITION_X,
+			POSITION_Y
+		FROM RYHR.RYHCF08MT
+		WHERE 1=1
+			AND CONTRACT_SEQ = #{contractSeq}
+	</select>
+	
+	<insert id="insertContract" parameterType="ContractInfo">
+		INSERT /* insertContract */
+		INTO RYHR.RYHCF08MT (
+			CONTRACT_SEQ,
+			SAUP_GUBUN,
+			DIVISION,
+			USERNAME,
+			START_DATE,
+			END_DATE,
+			ROAD_ADDR,
+			JIBUN_ADDR,
+			DETAIL_ADDR,
+			SINM,
+			ZIPNO,
+			PAYMENT,
+			DEPOSIT,
+			RENT,
+			ADMINISTRATIVE_EXPENSES,
+			REMARKS,
+			STATUS,
+			REG_SABUN,
+			REG_NAME,
+			REG_DATE,
+			UPD_SABUN,
+			UPD_NAME,
+			UPD_DATE,
+			POSITION_X,
+			POSITION_Y
+		) VALUES (
+			SEQ_RYHCF08MT.NEXTVAL,
+			#{saupGubun},
+			#{division},
+			#{username},
+			TO_DATE(#{startDate}, 'YYYY-MM-DD'),
+			TO_DATE(#{endDate}, 'YYYY-MM-DD'),
+			#{roadAddr},
+			#{jibunAddr},
+			#{detailAddr},
+			#{sinm},
+			#{zipno},
+			#{payment},
+			#{deposit},
+			#{rent},
+			#{administrativeExpenses},
+			#{remarks},
+			#{status},
+			#{regSabun},
+			#{regName},
+			SYSDATE,
+			#{updSabun},
+			#{updName},
+			SYSDATE,
+			#{positionX},
+			#{positionY}
+		)
+		<selectKey keyProperty="currseq" resultType="long" order="AFTER">
+			SELECT SEQ_RYHCF08MT.CURRVAL FROM DUAL
+		</selectKey>
+	</insert>
+	
+	<update id="updateFileContract" parameterType="ContractInfo">
+		UPDATE /* updateFileContract */
+			RYHR.RYHCF08MT 
+		SET 
+			<choose>
+				<when test="attachFilepath != null and attachFilepath != ''">
+			ATTACH_FILEPATH = #{attachFilepath},
+				</when>
+				<otherwise>
+			ATTACH_FILEPATH = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilename != null and attachFilename != ''">
+			ATTACH_FILENAME = #{attachFilename},
+				</when>
+				<otherwise>
+			ATTACH_FILENAME = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilesize != null and attachFilesize != ''">
+			ATTACH_FILESIZE = #{attachFilesize}
+				</when>
+				<otherwise>
+			ATTACH_FILESIZE = null
+				</otherwise>
+			</choose>
+		WHERE 
+			CONTRACT_SEQ = #{contractSeq}
+	</update>
+	
+	<update id="updateContract" parameterType="ContractInfo">
+		UPDATE /* updateContract */
+			RYHR.RYHCF08MT 
+		SET 
+			SAUP_GUBUN = #{saupGubun},
+			DIVISION = #{division},
+			USERNAME = #{username},
+			START_DATE = TO_DATE(#{startDate}, 'YYYY-MM-DD'),
+			END_DATE = TO_DATE(#{endDate}, 'YYYY-MM-DD'),
+			ROAD_ADDR = #{roadAddr},
+			JIBUN_ADDR = #{jibunAddr},
+			DETAIL_ADDR = #{detailAddr},
+			SINM = #{sinm},
+			ZIPNO = #{zipno},
+			PAYMENT = #{payment},
+			DEPOSIT = #{deposit},
+			RENT = #{rent},
+			ADMINISTRATIVE_EXPENSES = #{administrativeExpenses},
+			REMARKS = #{remarks},
+			STATUS = #{status},
+			UPD_SABUN = #{updSabun},
+			UPD_NAME = #{updName},
+			UPD_DATE = SYSDATE,
+			POSITION_X = #{positionX},
+			POSITION_Y = #{positionY}
+		WHERE 
+			CONTRACT_SEQ = #{contractSeq}
+	</update>
+	
+	<update id="deleteContract" parameterType="ContractInfo">
+		UPDATE /* deleteContract */
+			RYHR.RYHCF08MT 
+		SET 
+			STATUS = #{status},
+			UPD_SABUN = #{updSabun},
+			UPD_NAME = #{updName},
+			UPD_DATE = SYSDATE
+		WHERE 
+			CONTRACT_SEQ = #{contractSeq}
+	</update>
+	
+	<select id="selectContractStatisticsList" parameterType="ContractInfo" resultType="ContractInfo">
+		SELECT /* selectContractStatisticsList */
+		    SAUP_GUBUN,
+		    USERNAME,
+		    ROAD_ADDR||' '||DETAIL_ADDR ROAD_ADDR,
+		    PAYMENT,
+		    DEPOSIT,
+		    RENT,
+		    ADMINISTRATIVE_EXPENSES,
+		    RENT + ADMINISTRATIVE_EXPENSES PAID_MONEY
+		FROM
+		    RYHR.RYHCF08MT
+		WHERE 1=1
+		    <if test="division != null and division != ''">
+			AND DIVISION = #{division}
+			</if>
+			<if test="payment != null and payment != ''">
+			AND PAYMENT = #{payment}
+			</if>
+		    AND START_DATE <![CDATA[<=]]> TO_DATE(#{standardDate}, 'YYYY-MM-DD')
+		    AND END_DATE <![CDATA[>=]]> TO_DATE(#{standardDate}, 'YYYY-MM-DD')
+		UNION ALL
+		SELECT
+		    '' SAUP_GUBUN,
+		    '' USERNAME,
+		    '' ROAD_ADDR,
+		    '소계' PAYMENT,
+		    NVL(SUM(DEPOSIT),0) DEPOSIT,
+		    NVL(SUM(RENT),0) RENT,
+		    NVL(SUM(ADMINISTRATIVE_EXPENSES),0) ADMINISTRATIVE_EXPENSES,
+		    NVL(SUM(RENT + ADMINISTRATIVE_EXPENSES),0) PAID_MONEY
+		FROM
+		    RYHR.RYHCF08MT
+		WHERE 1=1
+			<if test="division != null and division != ''">
+			AND DIVISION = #{division}
+			</if>
+		    <if test="payment != null and payment != ''">
+			AND PAYMENT = #{payment}
+			</if>
+		    AND START_DATE <![CDATA[<=]]> TO_DATE(#{standardDate}, 'YYYY-MM-DD')
+		    AND END_DATE <![CDATA[>=]]> TO_DATE(#{standardDate}, 'YYYY-MM-DD')
+		ORDER BY SAUP_GUBUN
+	</select>
+	
+	<select id="selectTotalContractStatisticsList" parameterType="ContractInfo" resultType="ContractInfo">
+		SELECT /* selectTotalContractStatisticsList */
+		    '' SAUP_GUBUN,
+		    '' USERNAME,
+		    '' ROAD_ADDR,
+		    '합계' PAYMENT,
+		    NVL(SUM(DEPOSIT),0) DEPOSIT,
+		    NVL(SUM(RENT),0) RENT,
+		    NVL(SUM(ADMINISTRATIVE_EXPENSES),0) ADMINISTRATIVE_EXPENSES,
+		    NVL(SUM(RENT + ADMINISTRATIVE_EXPENSES),0) PAID_MONEY
+		FROM
+		    RYHR.RYHCF08MT
+		WHERE 1=1
+			<if test="division != null and division != ''">
+			AND DIVISION IN ('사무실용', '개인용')
+			</if>
+		    <if test="payment != null and payment != ''">
+			AND PAYMENT IN('월세', '연납', '전세', '보유')
+			</if>
+		    AND START_DATE <![CDATA[<=]]> TO_DATE(#{standardDate}, 'YYYY-MM-DD')
+		    AND END_DATE <![CDATA[>=]]> TO_DATE(#{standardDate}, 'YYYY-MM-DD')
+	</select>
+	
+</mapper>

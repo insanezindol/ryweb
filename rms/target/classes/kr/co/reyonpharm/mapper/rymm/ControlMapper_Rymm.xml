@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.rymm.ControlMapper_Rymm">
+
+	<!-- 검색조건  -->
+	<sql id="selectControlListWhere">
+		<if test="s_content != null and s_content != ''">
+			AND B.JPM_NM LIKE '%'||#{s_content}||'%' OR C.JPM_NM LIKE '%'||#{s_content}||'%'
+		</if>
+		<if test="regDate != null and regDate != ''">
+			AND TO_CHAR(A.INS_DATE,'YYYYMMDD') = REPLACE(#{regDate},'-','')
+		</if>
+		<if test="s_gubun != null and s_gubun != ''">
+			AND CON_YN = #{s_gubun}
+		</if>
+	</sql>
+	
+	<sql id="selectControlLogWhere">
+		<if test="reqno != null and reqno != ''">
+			AND REQ_NO = #{reqno}
+		</if>
+	</sql>
+
+	<select id="selectControlList" parameterType="PageParam" resultType="ControlInfo">
+		SELECT A.REQ_NO AS REQNO, CON_GBN AS CONGBN, NVL(B.JPM_NM, C.JPM_NM) AS JPMNM, DECODE(D.SOL_DESC, NULL, A.CON_DESC, D.SOL_DESC ) AS CONDESC, NVL(B.GYUGK, C.GYUGK) AS GYUGK, CON_YN AS CONYN, TO_CHAR(INS_DATE, 'YYYY-MM-DD hh:mm') AS INSDATE
+		FROM RYMM.RYAZZ03IT A LEFT OUTER JOIN RYACC.RYAZZ02MT B ON(A.CODE=B.JPM_CD)
+		                      LEFT OUTER JOIN RYMM.RYBEB02MT C ON (A.CODE = C.RY_NO)
+		                      LEFT OUTER JOIN RYMM.RYAZZ04IT D ON (A.REQ_NO = D.REQ_NO)
+		WHERE
+			1=1
+			<include refid="selectControlListWhere" />
+		ORDER BY INS_DATE DESC
+	</select>
+	
+	<select id="selectControlCount" parameterType="PageParam" resultType="int">
+		SELECT COUNT('x') as count
+		FROM RYMM.RYAZZ03IT A LEFT OUTER JOIN RYACC.RYAZZ02MT B ON(A.CODE=B.JPM_CD)
+		                      LEFT OUTER JOIN RYMM.RYBEB02MT C ON (A.CODE = C.RY_NO)
+		WHERE
+			1=1
+			<include refid="selectControlListWhere" />
+	</select>
+	
+	<select id="selectControl" parameterType="ControlInfo" resultType="ControlInfo">
+		SELECT A.REQ_NO AS REQNO, NVL(B.JPM_NM, D.JPM_NM) AS JPMNM, A.CON_DESC AS CONDESC, TO_CHAR(A.INS_DATE, 'YYYY-MM-DD hh:mm') AS INSDATE, A.INS_EMP AS INSEMP, C.KNAME AS KNAME, A.CODE AS RYNO, (SELECT kname FROM RYHR.RYHZZ01MT WHERE SABUN = A.REL_EMP) AS RELEMP, TO_CHAR(A.REL_DATE, 'YYYY-MM-DD hh:mm') AS RELDATE
+		FROM RYMM.RYAZZ03IT A LEFT OUTER JOIN RYBEB02MT B ON(A.CODE = B.RY_NO) LEFT OUTER JOIN RYACC.RYAZZ02MT D ON (A.CODE = D.JPM_CD) JOIN RYHR.RYHZZ01MT C ON (A.INS_EMP = C.SABUN)
+		WHERE A.REQ_NO = #{reqno}
+	</select>
+	
+	<select id="selectBOM" parameterType="ControlInfo" resultType="ControlInfo">
+		SELECT A.RY_NO AS RYNO, NVl(B.JPM_NM, C.JPM_NM) AS JPMNM, NVL(B.GYUGK, C.GYUGK) AS GYUGK, DECODE(C.JPM_GBN,'','자재','반제품') AS JPMGBN
+		FROM RYMM.RYBPA01MT_BOM A, RYMM.RYBEB02MT B, RYACC.RYAZZ02MT C, RYACC.RYAZZ02MT D, RYPP.RYPGB01MT E, RYACC.RYAZZ01MT F
+		WHERE A.RY_NO = B.RY_NO(+) 
+		AND A.JPM_CD = #{ryno} -- 요긴 코드로 찾는거 
+		AND A.JPM_CD = D.JPM_CD 
+		AND A.RY_NO = C.JPM_CD(+) 
+		AND A.PROCESS_CD = E.PROCESS_CD(+) 
+		AND A.IPCL_CD = F.IPCL_CD
+		AND LENGTH(A.RY_NO) = 6
+		AND SUBSTR(A.RY_NO, 1, 1) = '3'
+		ORDER BY A.JPM_CD, A.BOM_GBN DESC, E.PROCESS_NM, A.RY_NO
+	</select>
+	
+	<select id="selectControlMaster" parameterType="ControlInfo" resultType="ControlInfo">
+		SELECT JPM_CD AS RYNO, JPM_NM AS JPMNM, GYUGK, DECODE(JPM_GBN,'11','제품','12','반제품','상품') AS JPMGBN
+		FROM RYACC.RYAZZ02MT
+		WHERE JPM_NM LIKE '%'||#{jpmnm}||'%'
+		AND JPM_GBN IN ('11') -- 반제품빼버림,'12') 
+		AND USE_GBN = 'Y'
+	</select>
+	
+	<insert id="insertControl" parameterType="ControlInfo">
+		INSERT INTO RYMM.RYAZZ03IT (REQ_NO, CON_GBN, CODE, CON_DESC, CON_YN, INS_DATE, INS_EMP)
+		VALUES ( RYMM.SQ_RYAZZ02IT.NEXTVAL, '2', #{ryno}, #{condesc}, 'YES', SYSDATE, #{sabun} )
+		
+		<selectKey keyProperty="currseq" resultType="long" order="AFTER">
+			SELECT RYMM.SQ_RYAZZ02IT.CURRVAL FROM DUAL
+		</selectKey>
+	</insert>
+	
+	<delete id="deleteControl" parameterType="ControlInfo">
+		DELETE FROM RYMM.RYAZZ03IT
+		WHERE
+			REQ_NO = #{reqno}
+	</delete>
+	
+	<update id="updateControl" parameterType="ControlInfo">
+		UPDATE RYMM.RYAZZ03IT
+		SET CON_YN = 'NO', REL_EMP = #{relemp}, REL_DATE = SYSDATE
+		WHERE REQ_NO = #{reqno}
+	</update>
+	
+	<insert id="addControlFilePath" parameterType="ControlInfo">
+		INSERT INTO RYMM.RYAZZ05IT (REQ_NO, FILE_PATH, REQ_FILE_NAME)
+		VALUES (#{reqno}, #{filepath}, #{reqfilename})
+	</insert>
+	
+	<insert id="insertControlFilePath" parameterType="ControlInfo">
+		INSERT INTO RYMM.RYAZZ05IT (REQ_NO, FILE_PATH)
+		VALUES (#{reqno}, #{filepath})
+	</insert>
+	
+	<update id="updateControlFilePath" parameterType="ControlInfo">
+		UPDATE RYMM.RYAZZ05IT
+		SET AF_FILE_NAME = #{affilename}
+		<include refid="updateControlFilePathIsBfFile" />
+		WHERE REQ_NO = #{reqno}
+	</update>
+	
+	<sql id="updateControlFilePathIsBfFile">
+		<if test="bffilename != null and bffilename != ''">
+			, BF_FILE_NAME = #{bffilename}
+		</if>
+	</sql>
+			
+	<select id="selectControlFilePath" parameterType="ControlInfo" resultType="ControlInfo">
+		SELECT REQ_NO AS REQNO, REQ_FILE_NAME AS REQFILENAME, FILE_PATH AS FILEPATH, BF_FILE_NAME AS BFFILENAME, AF_FILE_NAME AS AFFILENAME
+		FROM RYMM.RYAZZ05IT
+		WHERE REQ_NO = #{reqno}
+	</select>
+	
+	<delete id="deleteControlFilePath" parameterType="ControlInfo">
+		DELETE FROM RYMM.RYAZZ05IT
+		WHERE REQ_NO = #{reqno}
+	</delete>
+	
+	<insert id="insertControlLog" parameterType="ControlInfo">
+		INSERT INTO RYMM.RYAZZ04IT ( REQ_NO, SOL_DESC, LOG_EMP, LOG_DATE)
+		VALUES ( #{reqno}, #{soldesc}, #{logemp}, SYSDATE)
+	</insert>
+	
+	<select id="selectControlLog" parameterType="ControlInfo" resultType="ControlInfo">
+		SELECT REQ_NO AS REQNO, SOL_DESC AS SOLDESC, LOG_EMP AS LOGEMP, (SELECT kname FROM RYHR.RYHZZ01MT WHERE SABUN = LOG_EMP) AS KNAME, TO_CHAR(LOG_DATE, 'YYYY-MM-DD hh:mm') AS LOG_DATE,
+		       (SELECT kname FROM RYHR.RYHZZ01MT WHERE SABUN = CF_EMP) AS CFEMP, TO_CHAR(CF_DATE, 'YYYY-MM-DD hh:mm') AS CFDATE
+		FROM RYMM.RYAZZ04IT
+		WHERE
+			1=1
+		<include refid="selectControlLogWhere" />
+	</select>
+	
+	<update id="updateControlLog" parameterType="ControlInfo">
+		UPDATE RYMM.RYAZZ04IT
+		SET CF_EMP = #{cfemp}, CF_DATE = SYSDATE
+		WHERE REQ_NO = #{reqno}
+	</update>
+	
+	<select id="selectEmailAddressList" resultType="ControlInfo">
+	<![CDATA[
+		SELECT ITEM1, KNAME, REYON_MAIL AS MAILID
+  		FROM (Select A.ITEM1, B.KNAME, C.REYON_MAIL, ROW_NUMBER() OVER( PARTITION BY GRP_CODE ORDER BY A.CODE) RN
+          		FROM RYMM.RYBCD10MT A, RYHR.RYHZZ01MT B, RYHR.RYHAA01IT C
+       		   WHERE A.GRP_CODE = '68'
+         	     AND A.USE_GBN = 'Y'
+         	     AND A.ITEM1 = B.SABUN
+         	     AND B.RETIRE_DAY IS NULL
+         	     AND A.ITEM1 = C.SABUN(+)
+         	     AND C.REYON_MAIL IS NOT NULL)
+ 		Where RN <= 3
+		ORDER BY RN
+	]]>
+	</select>
+	
+	<select id="selectEmailAddress" parameterType="ControlInfo" resultType="ControlInfo">
+	<![CDATA[
+		SELECT REYON_MAIL AS MAILID FROM RYHR.RYHAA01IT WHERE SABUN = #{insemp}
+	]]>
+	</select>
+</mapper>
+	

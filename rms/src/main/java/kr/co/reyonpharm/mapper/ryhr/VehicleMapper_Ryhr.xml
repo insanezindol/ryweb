@@ -1,0 +1,344 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.VehicleMapper_Ryhr">
+	
+	<sql id="selectVehicleListWhere">
+		<if test="s_divide != null and s_divide != ''">
+			AND DIVISION = #{s_divide}
+		</if>
+		<if test="s_carnum != null and s_carnum != ''">
+			AND VEHICLE_NO LIKE '%'||#{s_carnum}||'%'
+		</if>
+		<if test="s_cartype != null and s_cartype != ''">
+			AND VEHICLE_TYPE LIKE '%'||#{s_cartype}||'%'
+		</if>
+		<if test="s_user != null and s_user != ''">
+			AND USERNAME LIKE '%'||#{s_user}||'%'
+		</if>
+		<if test="s_paid != null and s_paid != ''">
+			AND PAYMENT = #{s_paid}
+		</if>
+		<if test="s_status != null and s_status != '' and s_status != 'ALL'">
+			AND STATUS = #{s_status}
+		</if>
+	</sql>
+	
+	<select id="selectVehicleListCount" parameterType="PageParam" resultType="int">
+		SELECT /* selectVehicleListCount */
+			COUNT(1)
+		FROM (
+			SELECT
+				VEHICLE_SEQ,
+				VEHICLE_NO,
+				VEHICLE_TYPE,
+				DIVISION,
+				CASE USERNAME
+					WHEN '정순옥 회장' THEN '회장님'
+					WHEN '유용환 부사장' THEN '대표이사'
+					ELSE USERNAME
+				END USERNAME,
+				PAYMENT,
+				TO_CHAR(RENT_START_DATE, 'YYYY-MM-DD') RENT_START_DATE,
+				TO_CHAR(RENT_END_DATE, 'YYYY-MM-DD') RENT_END_DATE,
+				RENT_MONEY,
+				TO_CHAR(INSURANCE_START_DATE, 'YYYY-MM-DD') INSURANCE_START_DATE,
+				TO_CHAR(INSURANCE_END_DATE, 'YYYY-MM-DD') INSURANCE_END_DATE,
+				INSURANCE_MONEY,
+				REMARKS,
+				ATTACH_FILEPATH,
+				ATTACH_FILENAME,
+				ATTACH_FILESIZE,
+				STATUS,
+				REG_SABUN,
+				REG_NAME,
+				TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+				UPD_SABUN,
+				UPD_NAME,
+				TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE
+			FROM RYHR.RYHCF12MT
+			WHERE 1=1
+				<include refid="selectVehicleListWhere" />
+			) a
+	</select>
+	
+	<select id="selectVehicleList" parameterType="PageParam" resultType="VehicleInfo">
+		SELECT /* selectVehicleList */
+			b.*
+		FROM (
+			SELECT
+				ROWNUM RNUM,
+				a.*
+			FROM (
+				SELECT
+					VEHICLE_SEQ,
+					VEHICLE_NO,
+					VEHICLE_TYPE,
+					DIVISION,
+					CASE USERNAME
+						WHEN '정순옥 회장' THEN '회장님'
+						WHEN '유용환 부사장' THEN '대표이사'
+						ELSE USERNAME
+					END USERNAME,
+					PAYMENT,
+					TO_CHAR(RENT_START_DATE, 'YYYY-MM-DD') RENT_START_DATE,
+					TO_CHAR(RENT_END_DATE, 'YYYY-MM-DD') RENT_END_DATE,
+					RENT_MONEY,
+					TO_CHAR(INSURANCE_START_DATE, 'YYYY-MM-DD') INSURANCE_START_DATE,
+					TO_CHAR(INSURANCE_END_DATE, 'YYYY-MM-DD') INSURANCE_END_DATE,
+					INSURANCE_MONEY,
+					REMARKS,
+					ATTACH_FILEPATH,
+					ATTACH_FILENAME,
+					ATTACH_FILESIZE,
+					STATUS,
+					REG_SABUN,
+					REG_NAME,
+					TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+					UPD_SABUN,
+					UPD_NAME,
+					TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE
+				FROM RYHR.RYHCF12MT
+				WHERE 1=1
+					<include refid="selectVehicleListWhere" />
+				ORDER BY RENT_END_DATE DESC
+				) a
+			) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<select id="selectVehicle" parameterType="VehicleInfo" resultType="VehicleInfo">
+		SELECT /* selectVehicle */
+			VEHICLE_SEQ,
+			VEHICLE_NO,
+			VEHICLE_TYPE,
+			DIVISION,
+			CASE USERNAME
+				WHEN '정순옥 회장' THEN '회장님'
+				WHEN '유용환 부사장' THEN '대표이사'
+				ELSE USERNAME
+			END USERNAME,
+			PAYMENT,
+			TO_CHAR(RENT_START_DATE, 'YYYY-MM-DD') RENT_START_DATE,
+			TO_CHAR(RENT_END_DATE, 'YYYY-MM-DD') RENT_END_DATE,
+			RENT_MONEY,
+			TO_CHAR(INSURANCE_START_DATE, 'YYYY-MM-DD') INSURANCE_START_DATE,
+			TO_CHAR(INSURANCE_END_DATE, 'YYYY-MM-DD') INSURANCE_END_DATE,
+			INSURANCE_MONEY,
+			REMARKS,
+			ATTACH_FILEPATH,
+			ATTACH_FILENAME,
+			ATTACH_FILESIZE,
+			STATUS,
+			REG_SABUN,
+			REG_NAME,
+			TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			UPD_SABUN,
+			UPD_NAME,
+			TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE
+		FROM RYHR.RYHCF12MT
+		WHERE 1=1
+			AND VEHICLE_SEQ = #{vehicleSeq}
+	</select>
+	
+	<insert id="insertVehicle" parameterType="VehicleInfo">
+		INSERT /* insertVehicle */
+		INTO RYHR.RYHCF12MT (
+			VEHICLE_SEQ,
+			VEHICLE_NO,
+			VEHICLE_TYPE,
+			DIVISION,
+			USERNAME,
+			PAYMENT,
+			RENT_START_DATE,
+			RENT_END_DATE,
+			RENT_MONEY,
+		<if test="insuranceStartDate != null and insuranceStartDate != ''">
+			INSURANCE_START_DATE,
+		</if>
+		<if test="insuranceEndDate != null and insuranceEndDate != ''">
+			INSURANCE_END_DATE,
+		</if>
+		<if test="insuranceMoney != null and insuranceMoney != ''">
+			INSURANCE_MONEY,
+		</if>
+			REMARKS,
+			STATUS,
+			REG_SABUN,
+			REG_NAME,
+			REG_DATE,
+			UPD_SABUN,
+			UPD_NAME,
+			UPD_DATE
+		) VALUES (
+			SEQ_RYHCF12MT.NEXTVAL,
+			#{vehicleNo},
+			#{vehicleType},
+			#{division},
+			#{username},
+			#{payment},
+			TO_DATE(#{rentStartDate}, 'YYYY-MM-DD'),
+			TO_DATE(#{rentEndDate}, 'YYYY-MM-DD'),
+			#{rentMoney},
+		<if test="insuranceStartDate != null and insuranceStartDate != ''">
+			TO_DATE(#{insuranceStartDate}, 'YYYY-MM-DD'),
+		</if>
+		<if test="insuranceEndDate != null and insuranceEndDate != ''">
+			TO_DATE(#{insuranceEndDate}, 'YYYY-MM-DD'),
+		</if>
+		<if test="insuranceMoney != null and insuranceMoney != ''">
+			#{insuranceMoney},
+		</if>
+			#{remarks},
+			#{status},
+			#{regSabun},
+			#{regName},
+			SYSDATE,
+			#{updSabun},
+			#{updName},
+			SYSDATE
+		)
+		<selectKey keyProperty="currseq" resultType="long" order="AFTER">
+			SELECT SEQ_RYHCF12MT.CURRVAL FROM DUAL
+		</selectKey>
+	</insert>
+	
+	<update id="updateFileVehicle" parameterType="VehicleInfo">
+		UPDATE /* updateFileVehicle */
+			RYHR.RYHCF12MT
+		SET 
+			<choose>
+				<when test="attachFilepath != null and attachFilepath != ''">
+			ATTACH_FILEPATH = #{attachFilepath},
+				</when>
+				<otherwise>
+			ATTACH_FILEPATH = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilename != null and attachFilename != ''">
+			ATTACH_FILENAME = #{attachFilename},
+				</when>
+				<otherwise>
+			ATTACH_FILENAME = null,
+				</otherwise>
+			</choose>
+			<choose>
+				<when test="attachFilesize != null and attachFilesize != ''">
+			ATTACH_FILESIZE = #{attachFilesize}
+				</when>
+				<otherwise>
+			ATTACH_FILESIZE = null
+				</otherwise>
+			</choose>
+		WHERE 
+			VEHICLE_SEQ = #{vehicleSeq}
+	</update>
+	
+	<update id="updateVehicle" parameterType="VehicleInfo">
+		UPDATE /* updateVehicle */
+			RYHR.RYHCF12MT 
+		SET 
+			VEHICLE_NO = #{vehicleNo},
+			VEHICLE_TYPE = #{vehicleType},
+			DIVISION = #{division},
+			USERNAME = #{username},
+			PAYMENT = #{payment},
+			RENT_START_DATE = TO_DATE(#{rentStartDate}, 'YYYY-MM-DD'),
+			RENT_END_DATE = TO_DATE(#{rentEndDate}, 'YYYY-MM-DD'),
+			RENT_MONEY = #{rentMoney},
+		<if test="insuranceStartDate != null and insuranceStartDate != ''">
+			INSURANCE_START_DATE = TO_DATE(#{insuranceStartDate}, 'YYYY-MM-DD'),
+		</if>
+		<if test="insuranceEndDate != null and insuranceEndDate != ''">
+			INSURANCE_END_DATE = TO_DATE(#{insuranceEndDate}, 'YYYY-MM-DD'),
+		</if>
+		<if test="insuranceMoney != null and insuranceMoney != ''">
+			INSURANCE_MONEY = #{insuranceMoney},
+		</if>	
+			REMARKS = #{remarks},
+			STATUS = #{status},
+			UPD_SABUN = #{updSabun},
+			UPD_NAME = #{updName},
+			UPD_DATE = SYSDATE
+		WHERE 
+			VEHICLE_SEQ = #{vehicleSeq}
+	</update>
+	
+	<update id="deleteVehicle" parameterType="VehicleInfo">
+		UPDATE /* deleteVehicle */
+			RYHR.RYHCF12MT 
+		SET 
+			STATUS = #{status},
+			UPD_SABUN = #{updSabun},
+			UPD_NAME = #{updName},
+			UPD_DATE = SYSDATE
+		WHERE 
+			VEHICLE_SEQ = #{vehicleSeq}
+	</update>
+	
+	<select id="selectVehicleStatisticsList" parameterType="VehicleInfo" resultType="VehicleInfo">
+		SELECT /* selectVehicleStatisticsList */
+			VEHICLE_SEQ,
+			VEHICLE_NO,
+			VEHICLE_TYPE,
+			DIVISION,
+			CASE USERNAME
+				WHEN '정순옥 회장' THEN '회장님'
+				WHEN '유용환 부사장' THEN '대표이사'
+				ELSE USERNAME
+			END USERNAME,
+			PAYMENT,
+			TO_CHAR(RENT_START_DATE, 'YYYY-MM-DD') RENT_START_DATE,
+			TO_CHAR(RENT_END_DATE, 'YYYY-MM-DD') RENT_END_DATE,
+			RENT_MONEY,
+			TO_CHAR(INSURANCE_START_DATE, 'YYYY-MM-DD') INSURANCE_START_DATE,
+			TO_CHAR(INSURANCE_END_DATE, 'YYYY-MM-DD') INSURANCE_END_DATE,
+			INSURANCE_MONEY,
+			REMARKS,
+			ATTACH_FILEPATH,
+			ATTACH_FILENAME,
+			ATTACH_FILESIZE,
+			STATUS,
+			REG_SABUN,
+			REG_NAME,
+			TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			UPD_SABUN,
+			UPD_NAME,
+			TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE
+		FROM RYHR.RYHCF12MT
+		WHERE 1=1
+			AND RENT_START_DATE <![CDATA[<=]]> TO_DATE(#{standardDate}, 'YYYY-MM-DD')
+		    AND RENT_END_DATE <![CDATA[>=]]> TO_DATE(#{standardDate}, 'YYYY-MM-DD')
+		UNION ALL
+		SELECT
+		    9999 VEHICLE_SEQ,
+		    NULL VEHICLE_NO,
+		    NULL VEHICLE_TYPE,
+		    NULL DIVISION,
+		    NULL USERNAME,
+		    '가합계' PAYMENT,
+		    NULL RENT_START_DATE,
+		    NULL RENT_END_DATE,
+		    SUM(RENT_MONEY),
+		    NULL INSURANCE_START_DATE,
+		    NULL INSURANCE_END_DATE,
+		    SUM(INSURANCE_MONEY),
+		    NULL REMARKS,
+		    NULL ATTACH_FILEPATH,
+		    NULL ATTACH_FILENAME,
+		    NULL ATTACH_FILESIZE,
+		    NULL STATUS,
+		    NULL REG_SABUN,
+		    NULL REG_NAME,
+		    NULL REG_DATE,
+		    NULL UPD_SABUN,
+		    NULL UPD_NAME,
+		    NULL UPD_DATE
+		FROM RYHR.RYHCF12MT
+		WHERE 1=1
+		    AND RENT_START_DATE <![CDATA[<=]]> TO_DATE(#{standardDate}, 'YYYY-MM-DD')
+		    AND RENT_END_DATE <![CDATA[>=]]> TO_DATE(#{standardDate}, 'YYYY-MM-DD')
+		ORDER BY PAYMENT DESC, RENT_END_DATE, VEHICLE_TYPE
+	</select>
+	
+</mapper>

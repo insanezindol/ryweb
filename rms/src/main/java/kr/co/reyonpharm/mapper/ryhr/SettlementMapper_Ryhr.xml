@@ -1,0 +1,276 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.SettlementMapper_Ryhr">
+	
+	<select id="selectDeclarationDBList" parameterType="SettlementInfo" resultType="SettlementInfo">
+		SELECT /* selectDeclarationDBList */
+		    A.SABUN,
+		    B.DEPT_NAME,
+		    A.KNAME,
+		    C.ELEMENT_CNT,
+		    NVL2(A.RETIRE_DAY, 'O', 'X') RETIRE_YN,
+		    A.RETIRE_DAY
+		FROM
+		    RYHR.RYHZZ01MT A
+		    INNER JOIN RYHR.RYHZZ02MT B ON A.DEPT_CODE = B.DEPT_CODE
+		    LEFT OUTER JOIN (SELECT SABUN, COUNT(1) ELEMENT_CNT FROM RYHR.RYHPA30IT WHERE  1=1 AND YYMM = #{yymm} AND PAY_GB = '9' GROUP BY SABUN) C ON A.SABUN = C.SABUN
+		WHERE 1=1
+			AND (A.RETIRE_DAY IS NULL OR A.RETIRE_DAY LIKE SUBSTR(#{yymm}, 0, 4) || '%')
+		ORDER BY B.INNER_CD
+	</select>
+	
+	<select id="selectExcelMasterData" parameterType="SettlementInfo" resultType="SettlementInfo">
+		SELECT /* selectExcelMasterData */
+		    T1.KNAME AS KNAME,                           -- 성명
+		    T1.JUMIN AS JUMIN,                           -- 주민등록번호
+		    T1.STARTDATE AS STARTDATE,                   -- 시작일자
+		    T1.ENDDATE AS ENDDATE,                       -- 종료일자
+		    (T2.PAY_TOT + T2.BONUS_TOT) AS PAY_TOT,      -- 총급여
+		    T2.PAY_TOT AS PAY_GY,                        -- 급여
+		    T2.BONUS_TOT AS PAY_SY,                      -- 상여
+		    T2.SPECIAL_BONUS_TOT AS INJUNG_SY,           -- 인정상여
+		    '' AS GAIN_ON_STOCK_OPTIONS,                 -- 주식매수선택권행사이익
+		    '' AS EMPLOYEE_STOCK_OWNERSHIP,              -- 우리사주조합인출금
+		    '' AS OFFICER_RETIREMENT_INCOME,             -- 임원퇴직소득금액한도초과액
+		    '' AS JOB_INVENTION,                         -- 직무발명보상금
+		    T2.INCOME_TAX AS INCOME_TAX,                 -- 소득세
+		    T2.INHABITANT_TAX AS INHABITANT_TAX,         -- 지방소득세
+		    T2.COUNTRY_TAX AS COUNTRY_TAX,               -- 농어촌특별세
+		    T2.ANNUITY_PAY AS ANNUITY_PAY,               -- 국민연금보험료
+		    '' AS PUBLIC_EMPLOYEE_PENSION,               -- 공무원연금
+		    '' AS MILITARY_PENSION,                      -- 군인연금
+		    '' AS SCHOOL_EMPLOYEE_PENSION,               -- 사립학교직원연금
+		    '' AS OFFICE_PENSION,                        -- 별정우체국연금
+		    T2.HEALTH_PAY AS HEALTH_INSURANCE,           -- 건강보험료(장기요양포함)
+		    T2.UNEMPLOMENT_PAY AS EMPLOYMENT_PREMIUM,    -- 고용보험료
+		    '' AS STATUTORY_DONATION,                    -- 법정기부금
+		    '' AS RELIGION_IN,                           -- 종교단체지정기부금
+		    '' AS RELIGION_OUT,                          -- 종교단체외지정기부금
+		    T2.TAX_EXEMPTION_PAY AS NIGHT_PAY            -- 비과세(야간근로수당)
+		FROM
+		    (
+		        SELECT
+		            A.SABUN,
+		            A.KNAME,
+		            SYSTEM.DECRYPT(A.JUMIN_ONE,'r!E#Y%on321') || SYSTEM.DECRYPT(A.JUMIN_TWO,'r!E#Y%on321') JUMIN,
+		            CASE WHEN A.ENTER_DAY <![CDATA[<]]> #{yymm}||'0101' THEN #{yymm}||'-01-01' ELSE SUBSTR(A.ENTER_DAY,0,4) || '-' || SUBSTR(A.ENTER_DAY,5,2) || '-' || SUBSTR(A.ENTER_DAY,7,2) END STARTDATE,
+		            CASE WHEN A.RETIRE_DAY IS NULL THEN #{yymm}||'-12-31' WHEN A.RETIRE_DAY <![CDATA[>=]]> #{yymmNextYear}||'0101' THEN #{yymm}||'-12-31' ELSE SUBSTR(A.RETIRE_DAY,0,4) || '-' || SUBSTR(A.RETIRE_DAY,5,2) || '-' || SUBSTR(A.RETIRE_DAY,7,2) END ENDDATE
+		        FROM
+		            RYHR.RYHZZ01MT A
+		        WHERE 1 = 1
+		        <if test="saup == '10'">
+		        	AND A.DEPT_CODE NOT IN (SELECT DEPT_CODE FROM RYHR.RYHZZ02MT START WITH DEPT_CODE = '7000' CONNECT BY PRIOR DEPT_CODE = DEPT_PARCO)
+		        </if>
+		        <if test="saup == '20'">
+		        	AND A.DEPT_CODE IN (SELECT DEPT_CODE FROM RYHR.RYHZZ02MT START WITH DEPT_CODE = '7000' CONNECT BY PRIOR DEPT_CODE = DEPT_PARCO)
+		        </if>
+		            AND NVL(A.RETIRE_DAY, #{yymmNextYear}||'0101') <![CDATA[>]]> #{yymm}||'1231'
+		            AND A.ENTER_DAY <![CDATA[<]]> #{yymmNextYear}||'0101'
+		    ) T1
+		    LEFT OUTER JOIN (
+		        SELECT
+		            SABUN,                                             --- 사번
+		            SUM(PAY_TOT) PAY_TOT,                              --- 급여총액
+		            SUM(BONUS_TOT) BONUS_TOT,                          --- 상여총액
+		            SUM(SPECIAL_BONUS_TOT) SPECIAL_BONUS_TOT,          --- 인정상여
+		            SUM(ETC_PAY_TOT) ETC_PAY_TOT,                      --- 기타소득
+		            SUM(TAX_EXEMPTION_PAY) TAX_EXEMPTION_PAY,          --- 비과세(야간근로수당등)
+		            SUM(ETC_TAX_EXEMPTION_PAY) ETC_TAX_EXEMPTION_PAY,  --- 비과세(기타)
+		            SUM(REDUCE_EXEMPTION_PAY) REDUCE_EXEMPTION_PAY,    --- 감면세액
+		            SUM(INCOME_TAX) INCOME_TAX,                        --- 소득세
+		            SUM(INHABITANT_TAX) INHABITANT_TAX,                --- 주민세
+		            SUM(COUNTRY_TAX) COUNTRY_TAX,                      --- 농특세
+		            SUM(ANNUITY_PAY) ANNUITY_PAY,                      --- 국민연금
+		            SUM(HEALTH_PAY) HEALTH_PAY,                        --- 건강보험
+		            SUM(UNEMPLOMENT_PAY) UNEMPLOMENT_PAY,              --- 고용보험
+		            SUM(CONTRIBUTE_PAY) CONTRIBUTE_PAY,                --- 기부금
+		            SUM(LIABILITY_TAX) LIABILITY_TAX                   --- 간이세액에의간소득세
+		        FROM RYHPA03IT A
+		        WHERE 1 = 1
+		            AND A.YYMM LIKE #{yymm}||'%'
+		        GROUP BY SABUN
+		    ) T2 ON T1.SABUN = T2.SABUN
+		ORDER BY
+		    T1.STARTDATE, T1.ENDDATE, T1.JUMIN
+	</select>
+	
+	<select id="selectExcelMasterExData" parameterType="SettlementInfo" resultType="SettlementInfo">
+		SELECT /* selectExcelMasterExData */
+		    CUS_NO AS CUS_NO,                                                               -- 사업자등록번호
+		    KNAME AS KNAME,                                                                 -- 성명
+		    JUMIN AS JUMIN,                                                                 -- 주민등록번호
+		    SEV_START_YMD AS STARTDATE,                                                     -- 근무시작일자
+		    SEV_END_YMD AS ENDDATE,                                                         -- 근무종료일자
+		    TOTAL_PAY AS PAY_TOT,                                                           -- 총급여
+		    PAY_TOT AS PAY_GY,                                                              -- 급여
+		    BONUS_TOT AS PAY_SY,                                                            -- 상여
+		    '' AS INJUNG_SY,                                                                -- 인정상여
+		    '' AS GAIN_ON_STOCK_OPTIONS,                                                    -- 주식매수선택권행사이익
+		    '' AS EMPLOYEE_STOCK_OWNERSHIP,                                                 -- 우리사주조합인출금
+		    '' AS OFFICER_RETIREMENT_INCOME,                                                -- 임원퇴직소득금액
+		    '' AS JOB_INVENTION,                                                            -- 직무발명보상금
+		    INCOME_TAX AS INCOME_TAX,                                                       -- 소득세
+		    INHABITANT_TAX AS INHABITANT_TAX,                                               -- 지방소득세
+		    COUNTRY_TAX AS COUNTRY_TAX,                                                     -- 농어촌특별세
+		    ANNUITY_PAY AS ANNUITY_PAY,                                                     -- 국민연금보험료
+		    '' AS PUBLIC_EMPLOYEE_PENSION,                                                  -- 공무원연금
+		    '' AS MILITARY_PENSION,                                                         -- 군인연금
+		    '' AS SCHOOL_EMPLOYEE_PENSION,                                                  -- 사립학교직원연금
+		    '' AS OFFICE_PENSION,                                                           -- 별정우체국연금
+		    TOTAL_HEALTH_PAY AS HEALTH_INSURANCE,                                           -- 건강보험료
+		    UNEMPLOMENT_PAY AS EMPLOYMENT_PREMIUM,                                          -- 고용보험료
+		    ETC_PAY_TOT AS ETC_PAY_TOT,                                                     -- 비과세항목(항목선택필요)
+		    TAXCUT_START_YMD AS TAXCUT_START_YMD,                                           -- 감면시작일자
+		    TAXCUT_END_YMD AS TAXCUT_END_YMD,                                               -- 감면종료일자
+		    CASE WHEN TAXCUT_RATE = '100' THEN TAXCUT_AMT ELSE NULL END AS TAXCUT_RATE100,  -- 중소기업감면(100%)
+		    CASE WHEN TAXCUT_RATE = '50' THEN TAXCUT_AMT ELSE NULL END AS TAXCUT_RATE50,    -- 중소기업감면(50%)
+		    CASE WHEN TAXCUT_RATE = '70' THEN TAXCUT_AMT ELSE NULL END AS TAXCUT_RATE70,    -- 중소기업감면(70%)
+		    CASE WHEN TAXCUT_RATE = '90' THEN TAXCUT_AMT ELSE NULL END AS TAXCUT_RATE90     -- 중소기업감면(90%)
+		FROM
+		    (
+		        SELECT
+		            A.YYMM,
+		            A.SABUN,
+		            SYSTEM.DECRYPT(B.JUMIN_ONE,'r!E#Y%on321') || SYSTEM.DECRYPT(B.JUMIN_TWO,'r!E#Y%on321') JUMIN,
+		            B.KNAME,
+		            A.SEQ,
+		            REPLACE(A.CUS_NO,'-', '') CUS_NO,
+		            A.CUS_NAME,
+		            ( A.PAY_TOT + A.BONUS_TOT ) TOTAL_PAY,
+		            A.PAY_TOT,
+		            A.BONUS_TOT,
+		            A.ETC_PAY_TOT,
+		            A.ANNUITY_PAY,
+		            ( A.HEALTH_PAY + A.MEDICAL_PAY ) TOTAL_HEALTH_PAY,
+		            A.HEALTH_PAY,
+		            A.MEDICAL_PAY,
+		            A.UNEMPLOMENT_PAY,
+		            A.INCOME_TAX,
+		            A.INHABITANT_TAX,
+		            A.COUNTRY_TAX,
+		            TO_CHAR(TO_DATE(A.SEV_START_YMD,'YYYYMMDD'),'YYYY-MM-DD') SEV_START_YMD,
+		            TO_CHAR(TO_DATE(A.SEV_END_YMD,'YYYYMMDD'),'YYYY-MM-DD') SEV_END_YMD,
+		            TO_CHAR(TO_DATE(A.TAXCUT_START_YMD,'YYYYMMDD'),'YYYY-MM-DD') TAXCUT_START_YMD,
+		            TO_CHAR(TO_DATE(A.TAXCUT_END_YMD,'YYYYMMDD'),'YYYY-MM-DD') TAXCUT_END_YMD,
+		            A.TAXCUT_AMT,
+		            A.TAXCUT_RATE
+		        FROM
+		            RYHPA17IT A, RYHZZ01MT B
+		        WHERE
+		            1 = 1
+		            AND A.YYMM LIKE #{yymm}||'%'
+		            AND A.SABUN = B.SABUN
+		        <if test="saup == '10'">
+		        	AND B.DEPT_CODE NOT IN (SELECT DEPT_CODE FROM RYHR.RYHZZ02MT START WITH DEPT_CODE = '7000' CONNECT BY PRIOR DEPT_CODE = DEPT_PARCO)
+		        </if>
+		        <if test="saup == '20'">
+		        	AND B.DEPT_CODE IN (SELECT DEPT_CODE FROM RYHR.RYHZZ02MT START WITH DEPT_CODE = '7000' CONNECT BY PRIOR DEPT_CODE = DEPT_PARCO)
+		        </if>
+		    )
+		ORDER BY JUMIN, SEV_START_YMD
+	</select>
+	
+	<select id="selectUserInfo" parameterType="NtsInfo" resultType="NtsInfo">
+		SELECT /* selectUserInfo */
+			SABUN,
+			JUMIN
+		FROM
+			(SELECT 
+				SABUN,
+				EDP_DATE,
+				SYSTEM.DECRYPT(JUMIN_ONE,'r!E#Y%on321') || '-' || SYSTEM.DECRYPT(JUMIN_TWO,'r!E#Y%on321') JUMIN
+			FROM RYHR.RYHZZ01MT)
+		WHERE 1=1
+			AND JUMIN = #{jumin}
+			AND EDP_DATE = (SELECT MAX(EDP_DATE) FROM RYHR.RYHZZ01MT WHERE SYSTEM.DECRYPT(JUMIN_ONE,'r!E#Y%on321') || '-' || SYSTEM.DECRYPT(JUMIN_TWO,'r!E#Y%on321') = #{jumin})
+	</select>
+	
+	<select id="selectExistInfo" parameterType="NtsInfo" resultType="NtsInfo">
+		SELECT /* selectExistInfo */
+			COUNT(1) EXIST_CNT
+		FROM
+			RYHR.RYHPA30IT
+		WHERE 1=1
+			AND YYMM = #{yymm}
+			AND PAY_GB = #{payGb}
+			AND SABUN = #{sabun}
+	</select>
+	
+	<delete id="deleteExistInfo" parameterType="NtsInfo">
+		DELETE /* deleteExistInfo */
+		FROM RYHR.RYHPA30IT
+		WHERE YYMM = #{yymm}
+			AND PAY_GB = #{payGb}
+			AND SABUN = #{sabun}
+	</delete>
+	
+	<insert id="insertNtsInfo" parameterType="NtsInfo">
+		INSERT /* insertNtsInfo */
+		INTO RYHR.RYHPA30IT (
+			YYMM,
+			PAY_GB,
+			SABUN,
+			ITEM_CD,
+			ITEM_DATA,
+			EDP_EMP_NO,
+			EDP_DATE,
+			ORDER_SEQ
+		) VALUES (
+			#{yymm},
+			#{payGb},
+			#{sabun},
+			( SELECT ITEM_CD FROM RYHR.ryhpa07mt WHERE 1=1 AND USE_GBN = 'Y' AND YYMM = #{yymm} AND XML_ELEMENT = #{itemKey} <if test="gbn != null and gbn != ''">AND GBN = #{gbn}</if> ),
+			#{itemData},
+			'SYSTEM',
+			SYSDATE,
+			#{orderSeq}
+		)
+	</insert>
+	
+	<select id="selectSpecificationDBList" parameterType="SettlementInfo" resultType="SettlementInfo">
+		SELECT /* selectSpecificationDBList */
+		    A.SABUN,
+		    B.DEPT_NAME,
+		    A.KNAME,
+		    NVL2(C.SABUN, 'O', 'X') ELEMENT_CNT,
+		    NVL2(A.RETIRE_DAY, 'O', 'X') RETIRE_YN,
+		    A.RETIRE_DAY
+		FROM
+		    RYHR.RYHZZ01MT A
+		    INNER JOIN RYHR.RYHZZ02MT B ON A.DEPT_CODE = B.DEPT_CODE
+		    LEFT OUTER JOIN (SELECT SABUN FROM RYHR.RYHPA31IT WHERE  1=1 AND YYMM = #{yymm}) C ON A.SABUN = C.SABUN
+		WHERE 1=1
+		    AND (A.RETIRE_DAY IS NULL OR A.RETIRE_DAY LIKE SUBSTR(#{yymm}, 0, 4) || '%')
+		ORDER BY B.INNER_CD
+	</select>
+	
+	<insert id="insertNtsResultInfo" parameterType="NtsInfo">
+		INSERT /* insertNtsResultInfo */
+		INTO RYHR.RYHPA31IT (
+			YYMM,
+			KNAME,
+			USER_NUM,
+			SABUN,
+			DETERMINED_TAX_INCOME,
+			DETERMINED_TAX_LOCAL_INCOME,
+			DETERMINED_TAX_SPECIAL_RURAL,
+			DEDUCTED_TAX_INCOME,
+			DEDUCTED_TAX_LOCAL_INCOME,
+			DEDUCTED_TAX__SPECIAL_RURAL,
+			REG_DATE
+		) VALUES (
+			#{yymm},
+			#{kname},
+			#{userNum},
+			#{sabun},
+			#{determinedTaxIncome},
+			#{determinedTaxLocalIncome},
+			#{determinedTaxSpecialRural},
+			#{deductedTaxIncome},
+			#{deductedTaxLocalIncome},
+			#{deductedTax_SpecialRural},
+			SYSDATE
+		)
+	</insert>
+	
+</mapper>

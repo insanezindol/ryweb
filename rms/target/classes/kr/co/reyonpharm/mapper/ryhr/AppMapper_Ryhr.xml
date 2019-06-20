@@ -1,0 +1,466 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.AppMapper_Ryhr">
+	
+	<select id="selectPcReportInfoList" parameterType="PcReportInfo" resultType="PcReportInfo">
+		SELECT /* selectPcReportInfoList */
+			REPORT_SEQ,
+			IP,
+			USERNAME,
+			REPORT_DAY,
+			TO_CHAR(REPORT_FIRST_DATE, 'YYYY-MM-DD HH24:MI:SS') REPORT_FIRST_DATE,
+			TO_CHAR(REPORT_LAST_DATE, 'YYYY-MM-DD HH24:MI:SS') REPORT_LAST_DATE
+	    FROM 
+			RYHR.RYHCF13MT
+		WHERE 1=1
+			AND IP = #{ip}
+			AND USERNAME = #{username} 
+	    	AND REPORT_DAY = #{reportDay}
+	</select>
+	
+	<insert id="insertPcReportInfo" parameterType="PcReportInfo">
+		INSERT /* insertPcReportInfo */
+		INTO RYHR.RYHCF13MT (
+			REPORT_SEQ,
+			IP,
+			USERNAME,
+			REPORT_DAY,
+			REPORT_FIRST_DATE
+		) VALUES (
+			SEQ_RYHCF13MT.NEXTVAL,
+			#{ip},
+			#{username},
+			#{reportDay},
+			SYSDATE
+		)
+	</insert>
+	
+	<update id="updatePcReportInfo" parameterType="PcReportInfo">
+		UPDATE /* updatePcReportInfo */
+			RYHR.RYHCF13MT 
+		SET 
+			REPORT_LAST_DATE = SYSDATE
+		WHERE 
+			REPORT_SEQ = #{reportSeq}
+	</update>
+	
+	<select id="selectPcMessageInfoList" parameterType="PcMessageInfo" resultType="PcMessageInfo">
+		SELECT /* selectPcMessageInfoList */
+			MESSAGE_SEQ,
+			USERNAME,
+			CONTENTS,
+			TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			TO_CHAR(SEND_DATE, 'YYYY-MM-DD HH24:MI:SS') SEND_DATE,
+			TO_CHAR(RECEIVE_DATE, 'YYYY-MM-DD HH24:MI:SS') RECEIVE_DATE,
+			MESSAGE_YN
+	    FROM 
+			RYHR.RYHCF14MT
+		WHERE 1=1
+			AND USERNAME = #{username}
+	    	AND MESSAGE_YN = 'N'
+			AND SEND_DATE <![CDATA[<=]]> SYSDATE
+	</select>
+	
+	<update id="updatePcMessageInfo" parameterType="PcMessageInfo">
+		UPDATE /* updatePcMessageInfo */
+			RYHR.RYHCF14MT 
+		SET
+			MESSAGE_YN = 'Y', RECEIVE_DATE = SYSDATE
+		WHERE 
+			MESSAGE_SEQ = #{messageSeq}
+	</update>
+	
+	<select id="selectPcOffInfo" parameterType="PcOffInfo" resultType="PcOffInfo">
+		SELECT /* selectPcOffInfo */
+			SABUN,
+			REQ_DAY,
+			GBN,
+			IPT_CODE,
+			IPT_FROM,
+			IPT_TO,
+			IPT_DATA,
+			IPT_NIGHT,
+			ID_FROM,
+			ID_TO,
+			UPD_FROM,
+			UPD_TO,
+			UPD_DATA,
+			UPD_NIGHT,
+			BIGO,
+			STATUS,
+			INS_SABUN,
+			INS_DATE,
+			CEIL((TO_DATE(REQ_DAY||IPT_TO, 'YYYYMMDDHH24MI') - SYSDATE) * 24 * 60) LIMIT_TIME
+	    FROM 
+			RYHR.RYHAH21IT
+		WHERE 1=1
+			AND SABUN = #{sabun}
+	    	AND REQ_DAY = #{reqDay}
+	    	AND GBN = #{gbn}
+	    	AND STATUS = #{status}
+	</select>
+	
+	<select id="selectUserInfo" parameterType="UserInfo" resultType="UserInfo">
+		SELECT /* selectUserInfo */
+		    A.SABUN SABUN,
+		    CASE 
+		        WHEN A.DEPT_CODE IN ('7000','7050','7100','7010','7020','7130','7200','7030','7040','7080','7300','7400','7060','7070','7500','7600','7110','7120') THEN '20'
+		        /* WHEN A.DEPT_CODE IN ('8600','8620','8621','8622','8623','8624') THEN '30' */
+		        WHEN A.DEPT_CODE IN ('6110','6210') THEN '40'
+		        WHEN A.DEPT_CODE IN ('6410','6420') THEN '50'
+		        ELSE '10'
+		    END SAUPCODE
+		FROM 
+		    RYHR.RYHZZ01MT A
+		WHERE 1=1 
+		    AND A.SABUN = #{sabun}
+	</select>
+	
+	<select id="selectPcProgramInfo" parameterType="PcProgramInfo" resultType="PcProgramInfo">
+		SELECT /* selectPcProgramInfo */
+		    USERNAME,
+			TO_CHAR(START_DATE, 'YYYY-MM-DD HH24:MI:SS') START_DATE,
+			TO_CHAR(END_DATE, 'YYYY-MM-DD HH24:MI:SS') END_DATE,
+			RUN_YN,
+			TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE
+		FROM 
+		    RYHR.RYHCF15MT 
+		WHERE 1=1 
+		    AND USERNAME = #{username}
+		    AND STATUS IN ('AA' , 'XX')
+		    AND START_DATE <![CDATA[<=]]> SYSDATE AND END_DATE <![CDATA[>=]]> SYSDATE
+	</select>
+	
+	<sql id="selectPcReportInfoListWhere">
+		<if test="s_sabun != null and s_sabun != ''">
+			AND T1.USERNAME = #{s_sabun}
+		</if>
+		<if test="s_regName != null and s_regName != ''">
+			AND T2.KNAME LIKE '%'||#{s_regName}||'%'
+		</if>
+		<if test="s_ip != null and s_ip != ''">
+			AND T1.IP LIKE '%'||#{s_ip}||'%'
+		</if>
+		<if test="startDate != null and startDate != ''">
+			AND T1.REPORT_DAY = REPLACE(#{startDate}, '-' , '')
+		</if>
+	</sql>
+	
+	<select id="selectPcReportInfoListCount" parameterType="PageParam" resultType="int">
+		SELECT /* selectPcReportInfoListCount */
+			COUNT(1)
+		FROM (
+			SELECT
+				T1.REPORT_SEQ,
+				T1.IP,
+				T1.USERNAME,
+				T1.REPORT_DAY,
+				TO_CHAR(T1.REPORT_FIRST_DATE, 'YYYY-MM-DD HH24:MI:SS') REPORT_FIRST_DATE,
+				TO_CHAR(T1.REPORT_LAST_DATE, 'YYYY-MM-DD HH24:MI:SS') REPORT_LAST_DATE,
+                T2.KNAME
+			FROM RYHR.RYHCF13MT T1
+			LEFT OUTER JOIN RYHR.RYHZZ01MT T2 ON T1.USERNAME = T2.SABUN
+			WHERE 1=1
+				<include refid="selectPcReportInfoListWhere" />
+			) a
+	</select>
+	
+	<select id="selectPcReportInfoListByRms" parameterType="PageParam" resultType="PcReportInfo">
+		SELECT /* selectPcReportInfoListByRms */
+			b.*
+		FROM (
+			SELECT
+				ROWNUM RNUM,
+				a.*
+			FROM (
+				SELECT
+					T1.REPORT_SEQ,
+					T1.IP,
+					T1.USERNAME,
+					T1.REPORT_DAY,
+					TO_CHAR(T1.REPORT_FIRST_DATE, 'YYYY-MM-DD HH24:MI:SS') REPORT_FIRST_DATE,
+					TO_CHAR(T1.REPORT_LAST_DATE, 'YYYY-MM-DD HH24:MI:SS') REPORT_LAST_DATE,
+	                T2.KNAME
+				FROM RYHR.RYHCF13MT T1
+				LEFT OUTER JOIN RYHR.RYHZZ01MT T2 ON T1.USERNAME = T2.SABUN
+				WHERE 1=1
+					<include refid="selectPcReportInfoListWhere" />
+				ORDER BY T1.REPORT_SEQ DESC
+				) a
+			) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<sql id="selectPcMessageInfoListWhere">
+		<if test="s_sabun != null and s_sabun != ''">
+			AND T1.USERNAME = #{s_sabun}
+		</if>
+		<if test="s_regName != null and s_regName != ''">
+			AND T2.KNAME LIKE '%'||#{s_regName}||'%'
+		</if>
+		<if test="s_contents != null and s_contents != ''">
+			AND T1.CONTENTS LIKE '%'||#{s_contents}||'%'
+		</if>
+		<if test="regDate != null and regDate != ''">
+			AND TO_CHAR(T1.REG_DATE,'YYYY-MM-DD') = #{regDate}
+		</if>
+		<if test="sendDate != null and sendDate != ''">
+			AND TO_CHAR(T1.SEND_DATE,'YYYY-MM-DD') = #{sendDate}
+		</if>
+		<if test="receiveDate != null and receiveDate != ''">
+			AND TO_CHAR(T1.RECEIVE_DATE,'YYYY-MM-DD') = #{receiveDate}
+		</if>
+	</sql>
+	
+	<select id="selectPcMessageInfoListCount" parameterType="PageParam" resultType="int">
+		SELECT /* selectPcMessageInfoListCount */
+			COUNT(1)
+		FROM (
+			SELECT
+			    T1.MESSAGE_SEQ,
+			    T1.USERNAME,
+			    T1.CONTENTS,
+			    TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			    TO_CHAR(T1.SEND_DATE, 'YYYY-MM-DD HH24:MI:SS') SEND_DATE,
+			    TO_CHAR(T1.RECEIVE_DATE, 'YYYY-MM-DD HH24:MI:SS') RECEIVE_DATE,
+			    T1.MESSAGE_YN,
+			    T2.KNAME
+			FROM RYHR.RYHCF14MT T1
+			LEFT OUTER JOIN RYHR.RYHZZ01MT T2 ON T1.USERNAME = T2.SABUN
+			WHERE 1=1
+				<include refid="selectPcMessageInfoListWhere" />
+			) a
+	</select>
+	
+	<select id="selectPcMessageInfoListByRms" parameterType="PageParam" resultType="PcMessageInfo">
+		SELECT /* selectPcMessageInfoListByRms */
+			b.*
+		FROM (
+			SELECT
+				ROWNUM RNUM,
+				a.*
+			FROM (
+				SELECT
+				    T1.MESSAGE_SEQ,
+				    T1.USERNAME,
+				    T1.CONTENTS,
+				    TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+				    TO_CHAR(T1.SEND_DATE, 'YYYY-MM-DD HH24:MI:SS') SEND_DATE,
+				    TO_CHAR(T1.RECEIVE_DATE, 'YYYY-MM-DD HH24:MI:SS') RECEIVE_DATE,
+				    T1.MESSAGE_YN,
+				    T2.KNAME
+				FROM RYHR.RYHCF14MT T1
+				LEFT OUTER JOIN RYHR.RYHZZ01MT T2 ON T1.USERNAME = T2.SABUN
+				WHERE 1=1
+					<include refid="selectPcMessageInfoListWhere" />
+				ORDER BY T1.MESSAGE_SEQ DESC
+				) a
+			) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<insert id="insertPcMessageInfo" parameterType="PcMessageInfo">
+		INSERT /* insertPcMessageInfo */
+		INTO RYHR.RYHCF14MT (
+			MESSAGE_SEQ,
+			USERNAME,
+			CONTENTS,
+			REG_DATE,
+			SEND_DATE,
+			MESSAGE_YN
+		) VALUES (
+			SEQ_RYHCF14MT.NEXTVAL,
+			#{username},
+			#{contents},
+			SYSDATE,
+			TO_DATE(#{sendDate}, 'YYYY-MM-DD HH24:MI'),
+			#{messageYn}
+		)
+	</insert>
+	
+	<delete id="deletePcMessageInfo" parameterType="PcMessageInfo">
+		DELETE /* deletePcMessageInfo */
+		FROM RYHR.RYHCF14MT
+		WHERE MESSAGE_SEQ = #{messageSeq}
+	</delete>
+	
+	<sql id="selectPcProgramInfoListWhere">
+			AND T1.STATUS IN ('01', '99', 'AA')
+		<if test="s_sabun != null and s_sabun != ''">
+			AND T1.USERNAME = #{s_sabun}
+		</if>
+		<if test="s_regName != null and s_regName != ''">
+			AND T2.KNAME LIKE '%'||#{s_regName}||'%'
+		</if>
+		<if test="regDate != null and regDate != ''">
+			AND TO_CHAR(T1.REG_DATE,'YYYY-MM-DD') = #{regDate}
+		</if>
+		<if test="startDate != null and startDate != ''">
+			AND TO_CHAR(T1.START_DATE,'YYYY-MM-DD') = #{startDate}
+		</if>
+		<if test="endDate != null and endDate != ''">
+			AND TO_CHAR(T1.END_DATE,'YYYY-MM-DD') = #{endDate}
+		</if>
+		<if test="s_status != null and s_status != ''">
+			AND T1.STATUS = #{s_status}
+		</if>
+	</sql>
+	
+	<select id="selectPcProgramInfoListCount" parameterType="PageParam" resultType="int">
+		SELECT /* selectPcProgramInfoListCount */
+			COUNT(1)
+		FROM (
+			SELECT
+				T1.REQ_SEQ,
+			    T1.USERNAME,
+			    TO_CHAR(T1.START_DATE, 'YYYY-MM-DD HH24:MI') START_DATE,
+			    TO_CHAR(T1.END_DATE, 'YYYY-MM-DD HH24:MI') END_DATE,
+			    T1.RUN_YN,
+			    TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			    T1.REQ_COMMENT,
+			    T1.STATUS,
+			    T1.CONFIRM_SABUN,
+			    T1.CONFIRM_NAME,
+			    TO_CHAR(T1.CONFIRM_DATE, 'YYYY-MM-DD HH24:MI:SS') CONFIRM_DATE,
+			    T1.CONFIRM_COMMENT,
+			    T2.KNAME
+			FROM RYHR.RYHCF15MT T1
+			LEFT OUTER JOIN RYHR.RYHZZ01MT T2 ON T1.USERNAME = T2.SABUN
+			WHERE 1=1
+				<include refid="selectPcProgramInfoListWhere" />
+			) a
+	</select>
+	
+	<select id="selectPcProgramInfoListByRms" parameterType="PageParam" resultType="PcProgramInfo">
+		SELECT /* selectPcProgramInfoListByRms */
+			b.*
+		FROM (
+			SELECT
+				ROWNUM RNUM,
+				a.*
+			FROM (
+				SELECT
+				    T1.REQ_SEQ,
+				    T1.USERNAME,
+				    TO_CHAR(T1.START_DATE, 'YYYY-MM-DD HH24:MI') START_DATE,
+				    TO_CHAR(T1.END_DATE, 'YYYY-MM-DD HH24:MI') END_DATE,
+				    T1.RUN_YN,
+				    TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+				    T1.REQ_COMMENT,
+				    T1.STATUS,
+				    T1.CONFIRM_SABUN,
+				    T1.CONFIRM_NAME,
+				    TO_CHAR(T1.CONFIRM_DATE, 'YYYY-MM-DD HH24:MI:SS') CONFIRM_DATE,
+				    T1.CONFIRM_COMMENT,
+				    T2.KNAME
+				FROM RYHR.RYHCF15MT T1
+				LEFT OUTER JOIN RYHR.RYHZZ01MT T2 ON T1.USERNAME = T2.SABUN
+				WHERE 1=1
+					<include refid="selectPcProgramInfoListWhere" />
+				ORDER BY T1.START_DATE DESC
+				) a
+			) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<select id="selectPcProgramInfoByRms" parameterType="PcProgramInfo" resultType="PcProgramInfo">
+		SELECT /* selectPcProgramInfoByRms */
+		    T1.REQ_SEQ,
+		    T1.USERNAME,
+		    TO_CHAR(T1.START_DATE, 'YYYY-MM-DD HH24:MI') START_DATE,
+		    TO_CHAR(T1.END_DATE, 'YYYY-MM-DD HH24:MI') END_DATE,
+		    T1.RUN_YN,
+		    TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+		    T1.REQ_COMMENT,
+		    T1.STATUS,
+		    T1.CONFIRM_SABUN,
+		    T1.CONFIRM_NAME,
+		    TO_CHAR(T1.CONFIRM_DATE, 'YYYY-MM-DD HH24:MI:SS') CONFIRM_DATE,
+		    T1.CONFIRM_COMMENT,
+		    T2.KNAME
+		FROM RYHR.RYHCF15MT T1
+		LEFT OUTER JOIN RYHR.RYHZZ01MT T2 ON T1.USERNAME = T2.SABUN
+		WHERE 1=1
+			AND T1.REQ_SEQ = #{reqSeq}
+	</select>
+	
+	<insert id="insertPcProgramInfo" parameterType="PcProgramInfo">
+		INSERT /* insertPcProgramInfo */
+		INTO RYHR.RYHCF15MT (
+			REQ_SEQ,
+			USERNAME,
+			START_DATE,
+			END_DATE,
+			RUN_YN,
+			REG_DATE,
+			REQ_COMMENT,
+			STATUS
+		) VALUES (
+			SEQ_RYHCF15MT.NEXTVAL,
+			#{username},
+			TO_DATE(#{startDate}, 'YYYY-MM-DD HH24:MI'),
+			TO_DATE(#{endDate}, 'YYYY-MM-DD HH24:MI'),
+			#{runYn},
+			SYSDATE,
+			#{reqComment},
+			#{status}
+		)
+	</insert>
+	
+	<select id="selectPcProgramInfoConfirmList" parameterType="PcProgramInfo" resultType="PcProgramInfo">
+		SELECT /* selectPcProgramInfoConfirmList */
+		    T1.REQ_SEQ,
+		    T1.USERNAME,
+		    TO_CHAR(T1.START_DATE, 'YYYY-MM-DD HH24:MI') START_DATE,
+		    TO_CHAR(T1.END_DATE, 'YYYY-MM-DD HH24:MI') END_DATE,
+		    T1.RUN_YN,
+		    TO_CHAR(T1.REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+		    T1.REQ_COMMENT,
+		    T1.STATUS,
+		    T1.CONFIRM_SABUN,
+		    T1.CONFIRM_NAME,
+		    TO_CHAR(T1.CONFIRM_DATE, 'YYYY-MM-DD HH24:MI:SS') CONFIRM_DATE,
+		    T1.CONFIRM_COMMENT,
+		    T2.KNAME
+		FROM RYHR.RYHCF15MT T1
+		LEFT OUTER JOIN RYHR.RYHZZ01MT T2 ON T1.USERNAME = T2.SABUN
+		WHERE 1=1
+			AND T1.STATUS = '01'
+		ORDER BY T1.START_DATE DESC
+	</select>
+	
+	<update id="updatePcProgramInfo" parameterType="PcProgramInfo">
+		UPDATE /* updatePcProgramInfo */
+			RYHR.RYHCF15MT
+		SET
+			USERNAME = #{username},
+			START_DATE = TO_DATE(#{startDate}, 'YYYY-MM-DD HH24:MI'),
+			END_DATE = TO_DATE(#{endDate}, 'YYYY-MM-DD HH24:MI'),
+			RUN_YN = #{runYn},
+			REG_DATE = SYSDATE,
+			REQ_COMMENT = #{reqComment},
+			STATUS = #{status}
+		WHERE
+			REQ_SEQ = #{reqSeq}
+	</update>
+	
+	<update id="confirmPcProgramInfo" parameterType="PcProgramInfo">
+		UPDATE /* confirmPcProgramInfo */
+			RYHR.RYHCF15MT
+		SET
+			STATUS = #{status},
+			CONFIRM_SABUN = #{confirmSabun},
+			CONFIRM_NAME = #{confirmName},
+			CONFIRM_DATE = SYSDATE,
+			CONFIRM_COMMENT = #{confirmComment}
+		WHERE
+			REQ_SEQ = #{reqSeq}
+	</update>
+	
+	<delete id="deletePcProgramInfo" parameterType="PcProgramInfo">
+		DELETE /* deletePcProgramInfo */
+		FROM RYHR.RYHCF15MT
+		WHERE REQ_SEQ = #{reqSeq}
+	</delete>
+	
+</mapper>

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.rysd.SfeMapper_Rysd">
+	
+	<resultMap id="resultMap" type="hashmap"/>
+	
+	<select id="selectSalesDept" statementType="CALLABLE" parameterType="hashmap">
+		{ CALL SFE_DEPT_PROC (
+			#{gubun, jdbcType=VARCHAR, mode=IN},
+			#{deptCd, jdbcType=VARCHAR, mode=IN},
+			#{userDeptCd, jdbcType=VARCHAR, mode=IN},
+			#{userEmpNo, jdbcType=VARCHAR, mode=IN},
+			#{userAuth, jdbcType=VARCHAR, mode=IN},
+			#{resultList, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=resultMap} )
+		}
+	</select>
+	
+	<select id="selectSalesUser" parameterType="SalesInfo" resultType="SalesInfo">
+		SELECT /* selectSalesUser */
+			DEPT_CD,
+		    EMP_NO,
+		    EMP_NM
+		FROM
+			RYSD.RYSCD03MT
+		WHERE 1=1
+			AND USE_GBN = 'Y'
+			AND DEPT_CD = #{deptNo}
+		ORDER BY 
+			EMP_NM
+	</select>
+	
+	<select id="selectSalesAccount" statementType="CALLABLE" parameterType="hashmap">
+		{ CALL SFE_CALL_CUS_PROC (
+			#{gubun, jdbcType=VARCHAR, mode=IN},
+			#{deptNo, jdbcType=VARCHAR, mode=IN},
+			#{empNo, jdbcType=VARCHAR, mode=IN},
+			#{cusCd, jdbcType=VARCHAR, mode=IN},
+			#{resultList, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=resultMap} )
+		}
+	</select>
+	
+	<select id="selectSalesRouteActivityUser" parameterType="SalesInfo" resultType="SalesInfo">
+		SELECT /* selectSalesRouteActivityUser */
+		    B.DEPT_NO,
+			C.DEPT_NM,
+			A.EMP_NO,
+			B.VISIT_SALES_CNT,
+			B.PLAN_SALES_CNT,
+			A.EMP_NM,
+			C.GUBUN1
+		FROM
+			RYSCD03MT A
+			LEFT OUTER JOIN TAB_VT_PL_MT B ON A.DEPT_CD = B.DEPT_NO AND A.EMP_NO = B.EMP_NO
+			LEFT OUTER JOIN RYSCD02MT C ON  A.DEPT_CD = C.DEPT_CD
+		WHERE 1=1
+			AND B.VISIT_DATE = REPLACE(#{standardDate}, '-' , '')
+		<if test="deptNo != null and deptNo != ''">
+			AND B.DEPT_NO = #{deptNo}
+		</if>
+		ORDER BY 
+			C.DEPT_NM, A.EMP_NM
+	</select>
+	
+	<select id="selectSalesRouteActivityRoute" statementType="CALLABLE" parameterType="hashmap">
+		{ CALL SFE_CALL_DATA_PROC (
+			REPLACE(#{startDate, jdbcType=VARCHAR, mode=IN}, '-' , ''),
+			REPLACE(#{endDate, jdbcType=VARCHAR, mode=IN}, '-' , ''),
+			#{gubun, jdbcType=VARCHAR, mode=IN},
+			#{deptNo, jdbcType=VARCHAR, mode=IN},
+			#{empNo, jdbcType=VARCHAR, mode=IN},
+			#{cust, jdbcType=VARCHAR, mode=IN},
+			#{resultList, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=resultMap} )
+		}
+	</select>
+	
+	<select id="selectSalesRouteChangeRoute" parameterType="SalesInfo" resultType="SalesInfo">
+		SELECT /* selectSalesRouteChangeRoute */
+			VISIT_SEQ,
+			SFA_SALES_NO,
+			SFA_CUST_NM,
+			START_STATUS,
+			GPS_START_NUM1,
+			GPS_START_NUM2,
+			END_STATUS,
+			GPS_END_NUM1,
+			GPS_END_NUM2
+		FROM
+			TAB_VT_PL_DETAIL
+		WHERE 1=1
+			AND EMP_NO = #{empNo}
+			AND VISIT_DATE = REPLACE(#{standardDate}, '-' , '')
+		ORDER BY
+			VISIT_SEQ
+	</select>
+	
+	<select id="selectSalesRouteChangePosition1" parameterType="SalesInfo" resultType="SalesInfo">
+		SELECT /* selectSalesRouteChangePosition1 */
+			ACT_CD,
+			GPS_LATITUDE,
+			GPS_LONGITUDE
+		FROM 
+			RYSCU05MT
+		WHERE 1=1
+			AND ACT_CD = #{sfaSalesNo}
+	</select>
+	
+	<select id="selectSalesRouteChangePosition2" parameterType="SalesInfo" resultType="SalesInfo">
+		SELECT /* selectSalesRouteChangePosition2 */
+			CUS_CD ACT_CD,
+			GPS_LATITUDE,
+			GPS_LONGITUDE
+		FROM 
+			VIEW_RYACU01MT
+		WHERE 1=1
+			AND CUS_CD = #{sfaSalesNo}
+	</select>
+	
+	<select id="selectSalesRouteChangeAccount" statementType="CALLABLE" parameterType="hashmap">
+		{ CALL SFE_GPS_POINT_PROC (
+			#{sfaSalesNo, jdbcType=VARCHAR, mode=IN},
+			#{humanX, jdbcType=VARCHAR, mode=IN},
+			#{humanY, jdbcType=VARCHAR, mode=IN},
+			#{errNum, mode=OUT, jdbcType=VARCHAR, javaType=string},
+			#{errMsg, mode=OUT, jdbcType=VARCHAR, javaType=string} )
+		}
+	</select>
+	
+	<select id="selectSalesTrendList" statementType="CALLABLE" parameterType="hashmap">
+		{ CALL SFE_CALL_3MONTH_PROC (
+			null,
+			REPLACE(#{standardDate, jdbcType=VARCHAR, mode=IN}, '-' , ''),
+			#{s_jijum, jdbcType=VARCHAR, mode=IN},
+			#{s_user, jdbcType=VARCHAR, mode=IN},
+			#{s_account, jdbcType=VARCHAR, mode=IN},
+			#{userDeptCd, jdbcType=VARCHAR, mode=IN},
+			#{userEmpNo, jdbcType=VARCHAR, mode=IN},
+			#{userAuth, jdbcType=VARCHAR, mode=IN},
+			#{resultList, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=resultMap} )
+		}
+	</select>
+	
+	<select id="selectSalesAccountList" statementType="CALLABLE" parameterType="hashmap">
+		{ CALL SFE_CALL_DATA2_PROC (
+			null,
+			REPLACE(#{startDate, jdbcType=VARCHAR, mode=IN}, '-' , ''),
+			REPLACE(#{endDate, jdbcType=VARCHAR, mode=IN}, '-' , ''),
+			#{s_jijum, jdbcType=VARCHAR, mode=IN},
+			#{s_user, jdbcType=VARCHAR, mode=IN},
+			#{s_account, jdbcType=VARCHAR, mode=IN},
+			#{userDeptCd, jdbcType=VARCHAR, mode=IN},
+			#{userEmpNo, jdbcType=VARCHAR, mode=IN},
+			#{userAuth, jdbcType=VARCHAR, mode=IN},
+			#{resultList, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=resultMap} )
+		}
+	</select>
+	
+	<select id="selectSalesPointList" statementType="CALLABLE" parameterType="hashmap">
+		{ CALL SFE_CALL_DATA3_PROC (
+			null,
+			REPLACE(#{standardDate, jdbcType=VARCHAR, mode=IN}, '-' , ''),
+			#{s_jijum, jdbcType=VARCHAR, mode=IN},
+			#{s_user, jdbcType=VARCHAR, mode=IN},
+			#{userDeptCd, jdbcType=VARCHAR, mode=IN},
+			#{userEmpNo, jdbcType=VARCHAR, mode=IN},
+			#{userAuth, jdbcType=VARCHAR, mode=IN},
+			#{resultList, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=resultMap} )
+		}
+	</select>
+	
+	<select id="selectSalesProfitList" statementType="CALLABLE" parameterType="hashmap">
+		{ CALL SFE_CALL_JPM_SALE_PROC (
+			null,
+			REPLACE(#{startDate, jdbcType=VARCHAR, mode=IN}, '-' , ''),
+			REPLACE(#{endDate, jdbcType=VARCHAR, mode=IN}, '-' , ''),
+			#{s_jijum, jdbcType=VARCHAR, mode=IN},
+			#{s_user, jdbcType=VARCHAR, mode=IN},
+			#{s_account, jdbcType=VARCHAR, mode=IN},
+			#{userDeptCd, jdbcType=VARCHAR, mode=IN},
+			#{userEmpNo, jdbcType=VARCHAR, mode=IN},
+			#{userAuth, jdbcType=VARCHAR, mode=IN},
+			#{resultList, mode=OUT, jdbcType=CURSOR, javaType=java.sql.ResultSet, resultMap=resultMap} )
+		}
+	</select>
+	
+</mapper>
