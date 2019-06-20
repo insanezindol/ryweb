@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.MainMapper_Ryhr">
+
+	<select id="selectPoll" parameterType="PollInfo" resultType="PollInfo">
+		SELECT /* selectPoll */
+			A.SABUN,
+			B.DEPT_NAME,
+			A.KNAME,
+			F.POS_LOG,
+			TO_CHAR(D.VOTE_DATE, 'YYYY-MM-DD HH24:MI') VOTE_DATE,
+			D.VOTE_CHOICE
+		FROM 
+			RYHR.RYHZZ01MT A
+			INNER JOIN RYHR.RYHZZ02MT B ON A.DEPT_CODE = B.DEPT_CODE
+			INNER JOIN RYHR.RYHAA20MT F ON A.POSIT_CD = F.POSIT_CD
+			LEFT OUTER JOIN RYHR.RYHCF20IT D ON A.SABUN = D.VOTE_SABUN
+		WHERE 1=1
+		    AND NVL(A.RETIRE_DAY,'99991231') >= TO_CHAR(SYSDATE, 'YYYYMMDD')
+	    <if test="voteDate == 'yes'">
+	    	AND VOTE_DATE IS NOT NULL
+	    </if>
+	    <if test="voteDate == 'no'">
+	    	AND VOTE_DATE IS NULL
+	    </if>
+	    <if test="voteSabun != null and voteSabun != ''">
+	    	AND D.VOTE_SABUN = #{voteSabun}
+	    </if>
+		ORDER BY B.INNER_CD, A.POSIT_CD
+	</select>
+	
+	<insert id="insertPoll" parameterType="PollInfo">
+		INSERT /* insertPoll */
+		INTO RYHR.RYHCF20IT (
+			VOTE_SABUN,
+			VOTE_DATE,
+			VOTE_CHOICE
+		) VALUES (
+			#{voteSabun},
+			SYSDATE,
+			#{voteChoice}
+		)
+	</insert>
+	
+	<select id="selectStatistics" resultType="PollInfo">
+		SELECT /* selectStatistics */
+		    NVL(VOTE_CHOICE,'합계') VOTE_CHOICE,
+		    COUNT(1) CNT
+		FROM RYHR.RYHCF20IT
+		GROUP BY ROLLUP(VOTE_CHOICE)
+		ORDER BY VOTE_CHOICE
+	</select>
+	
+</mapper>
