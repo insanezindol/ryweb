@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:task="http://www.springframework.org/schema/task"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.0.xsd
+	http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-4.0.xsd">
+
+	<context:component-scan base-package="kr.co.reyonpharm" />
+	
+	<bean id="reyonScheduler" class="kr.co.reyonpharm.scheduler.ReyonScheduler" />
+
+	<task:scheduled-tasks scheduler="MainScheduler">
+		<!-- 사용자 리스트 월~금 18시 1분에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="madeTotalUserListToJson" cron="0 1 18 * * MON-FRI" />
+		<!-- 부서 리스트 월~금 18시 2분에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="madeTotalDeptListToJson" cron="0 2 18 * * MON-FRI" />
+		<!-- 회의 상태 업데이트 월~금 7시~12시 1분마다 실행 -->
+		<task:scheduled ref="reyonScheduler" method="updateMeetingStatus" cron="0 */1 7-20 * * MON-FRI" />
+		<!-- 미완료 건에 대한 처리 진행 메일 발송 월~금 08시 30분에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="sendMailForIncomplete" cron="0 30 8 * * MON-FRI" />
+		<!-- 계약기간 도래 안내 메일 발송 매일 08시 40분에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="sendMailContract" cron="0 40 8 * * *" />
+		<!-- 계약기간 종료 상태 업데이트 진행 메일 발송 매일 08시 20분에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="sendUpdateContractStatusMail" cron="0 20 8 * * *" />
+		<!-- 메일 발송 정보 이관 매분 5초에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="migrationMail" cron="5 * * * * *" />
+		<!-- 메일 발송 정보 이관 데이터 삭제 (1개월 이전) 매일 04시 정각에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="deleteMigrationMail" cron="0 0 4 * * *" />
+		<!-- 제품 일련번호 이관 매일 02시 정각에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="migrationProduct" cron="0 0 2 * * *" />
+		<!-- 그룹웨어 비밀번호 변경시 MIS 동일하게 반영 10초마다 실행 -->
+		<task:scheduled ref="reyonScheduler" method="syncPwd" fixed-delay="10000" />
+		<!-- 그룹웨어 EIS 판매,수금 실적 데이터 연동 매분 15초에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="syncSale" cron="15 * * * * *" />
+		<!-- 그룹웨어 결재 상태 MIS 동일하게 반영 매분 20초에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="syncApproval" cron="20 * * * * *" />
+		<!-- 그룹웨어 외부접속 상태 변경 10분마다 30초에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="changeGroupwareStatus" cron="30 */10 * * * *" />
+		<!-- 그룹웨어 결재 완료 1개월 이전 데이터 삭제 매일 03시 정각에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="deleteApprovalData" cron="0 0 3 * * *" />
+		<!-- 날씨 정보 가져오기 매 20분마다 실행 -->
+		<task:scheduled ref="reyonScheduler" method="madeWeatherListToJson" cron="0 0,20,40 * * * *" />
+		<!-- 스마트폰 알림 발송 매분 10초에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="sendAlarm" cron="10 * * * * *" />
+		<!-- 미리보기에 사용한 임시 폴더 내 파일 삭제 매분 40초에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="deleteTempData" cron="40 * * * * *" />
+		<!-- 그룹웨어로 내선번호 연동 월~금 22시 30분에 실행 -->
+		<task:scheduled ref="reyonScheduler" method="changeGroupwarePhonenum" cron="0 30 22 * * MON-FRI" />
+	</task:scheduled-tasks>
+
+	<task:scheduler id="MainScheduler" pool-size="30" />
+
+	<!--
+	 Scheduler type
+	fixed-delay : End Time Of Before Task (ms)
+	fixed-rate : Start Time Of Before Task (ms)
+	cron : CronTab setting "* * * * * *"
+	Seconds : 0 ~ 59
+	Minutes : 0 ~ 59
+	Hours : 0 ~ 23
+	Day of Month : 1 ~ 31
+	Month : 1 ~ 12
+	Day of Week : 1 ~ 7 (1 > SUN, 7=> SAT or MON,SUN...)
+     -->
+     
+</beans>

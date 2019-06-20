@@ -1,0 +1,355 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.rysd.SchedulerMapper_Rysd">
+	
+	<select id="selectReyonSaleList" parameterType="SaleInfo" resultType="SaleInfo">
+		<![CDATA[
+		SELECT /* selectReyonSaleList */
+		    a.yyyymm,
+		    nvl(a.gubun1,'ZZ') gubun1,
+		    CASE
+		            WHEN a.yyyymm = substr( (
+		                SELECT
+		                    item1
+		                FROM
+		                    ryscd01mt
+		                WHERE
+		                    code_gr = 'G0'
+		                    AND   code_cd = '10'
+		            ),1,6) THEN (
+		                SELECT
+		                    item1
+		                FROM
+		                    ryscd01mt
+		                WHERE
+		                    code_gr = 'G0'
+		                    AND   code_cd = '10'
+		            )
+		            ELSE TO_CHAR(last_day(TO_DATE(a.yyyymm,'YYYYMM') ),'YYYYMMDD')
+		        END
+		    gijun_date,
+		    CASE
+		            WHEN a.gubun1 IS NULL THEN '전 체 합 계'
+		            WHEN a.gubun2 IS NULL
+		                 AND a.dept_cd IS NULL THEN d.code_nm
+		            || '계'
+		            WHEN a.dept_cd IS NULL THEN e.code_nm
+		            || '계'
+		            ELSE b.dept_nm
+		        END
+		    dept_nm,
+		    trunc(a.pmok_amt / 100000000,1) pmok_amt,
+		    trunc(a.sale_amt / 100000000,1) sale_amt,
+		    DECODE( (a.pmok_amt),0,0,round( (a.sale_amt / a.pmok_amt) * 100,1) ) pmok_rate,
+		    trunc(a.sale_amt1 / 100000000,1) pre_sale_amt,
+		    trunc(a.smok_amt / 100000000,1) smok_amt,
+		    trunc(a.sukm_amt / 100000000,1) sukm_amt,
+		    DECODE( (a.smok_amt),0,0,round( (a.sukm_amt / a.smok_amt) * 100,1) ) smok_rate,
+		    trunc(a.sukm_amt1 / 100000000,1) pre_sukm_amt
+		FROM
+		    (
+		        SELECT
+		            GROUPING(a.yyyymm)
+		            || GROUPING(b.gubun1)
+		            || GROUPING(b.gubun2)
+		            || GROUPING(a.dept_cd) gr,
+		            a.yyyymm,
+		            b.gubun1,
+		            b.gubun2,
+		            a.dept_cd dept_cd,
+		            SUM(pmok_amt) pmok_amt,
+		            SUM(sale_amt) sale_amt,
+		            SUM(sale_amt1) sale_amt1,
+		            SUM(smok_amt) smok_amt,
+		            SUM(sukm_amt) sukm_amt,
+		            SUM(sukm_amt1) sukm_amt1
+		        FROM
+		            (
+		                SELECT
+		                    yyyymm,
+		                    dept_cd dept_cd,
+		                    nvl(SUM(mp_amt),0) pmok_amt,
+		                    0 sale_amt,
+		                    0 sale_amt1,
+		                    0 smok_amt,
+		                    0 sukm_amt,
+		                    0 sukm_amt1
+		                FROM
+		                    rysd.rysmp02mt a
+		                WHERE
+		                    comp_cd = '20'
+		                    AND   yyyymm BETWEEN substr(TO_CHAR(add_months(TO_DATE( (
+		                        SELECT
+		                            item1
+		                        FROM
+		                            ryscd01mt
+		                        WHERE
+		                            code_gr = 'G0'
+		                            AND   code_cd = '10'
+		                    ),'YYYYMMDD'),-2),'YYYYMMDD'),1,6) AND substr( (
+		                        SELECT
+		                            item1
+		                        FROM
+		                            ryscd01mt
+		                        WHERE
+		                            code_gr = 'G0'
+		                            AND   code_cd = '10'
+		                    ),1,6)
+		                    AND   mp_gbn = '10'
+		                    AND   confirm_status = 'AA'
+		                GROUP BY
+		                    yyyymm,
+		                    dept_cd
+		                UNION ALL
+		                SELECT
+		                    substr(sale_date,1,6) yyyymm,
+		                    r_dam_dept_cd dept_cd,
+		                    0 pmok_amt,
+		                    nvl(SUM(amt),0) sale_amt,
+		                    0 sale_amt1,
+		                    0 smok_amt,
+		                    0 sukm_amt,
+		                    0 sukm_amt1
+		                FROM
+		                    rysd.rysdo02mt a
+		                WHERE
+		                    comp_cd = '20'
+		                    AND   sale_date BETWEEN substr(TO_CHAR(add_months(TO_DATE( (
+		                        SELECT
+		                            item1
+		                        FROM
+		                            ryscd01mt
+		                        WHERE
+		                            code_gr = 'G0'
+		                            AND   code_cd = '10'
+		                    ),'YYYYMMDD'),-2),'YYYYMMDD'),1,6)
+		                    || '01' AND (
+		                        SELECT
+		                            item1
+		                        FROM
+		                            ryscd01mt
+		                        WHERE
+		                            code_gr = 'G0'
+		                            AND   code_cd = '10'
+		                    )
+		                    AND   confirm_status = 'AA'
+		                GROUP BY
+		                    substr(sale_date,1,6),
+		                    r_dam_dept_cd
+		                UNION ALL
+		                SELECT
+		                    substr(TO_CHAR(add_months(TO_DATE(sale_date,'YYYYMMDD'),1),'YYYYMMDD'),1,6) yyyymm,
+		                    r_dam_dept_cd dept_cd,
+		                    0 pmok_amt,
+		                    0 sale_amt,
+		                    nvl(SUM(amt),0) sale_amt1,
+		                    0 smok_amt,
+		                    0 sukm_amt,
+		                    0 sukm_amt1
+		                FROM
+		                    rysd.rysdo02mt a
+		                WHERE
+		                    comp_cd = '20'
+		                    AND   sale_date BETWEEN substr(TO_CHAR(add_months(TO_DATE( (
+		                        SELECT
+		                            item1
+		                        FROM
+		                            ryscd01mt
+		                        WHERE
+		                            code_gr = 'G0'
+		                            AND   code_cd = '10'
+		                    ),'YYYYMMDD'),-3),'YYYYMMDD'),1,6)
+		                    || '01' AND TO_CHAR(add_months(TO_DATE( (
+		                        SELECT
+		                            item1
+		                        FROM
+		                            ryscd01mt
+		                        WHERE
+		                            code_gr = 'G0'
+		                            AND   code_cd = '10'
+		                    ),'YYYYMMDD'),-1),'YYYYMM')
+		                    || '31'
+		                    AND   confirm_status = 'AA'
+		                GROUP BY
+		                    substr(TO_CHAR(add_months(TO_DATE(sale_date,'YYYYMMDD'),1),'YYYYMMDD'),1,6),
+		                    r_dam_dept_cd
+		                UNION ALL
+		                SELECT
+		                    yyyymm,
+		                    dept_cd dept_cd,
+		                    0 pmok_amt,
+		                    0 sale_amt,
+		                    0 sale_amt1,
+		                    nvl(SUM(mp_amt),0) smok_amt,
+		                    0 sukm_amt,
+		                    0 sukm_amt1
+		                FROM
+		                    rysd.rysmp02mt a
+		                WHERE
+		                    comp_cd = '20'
+		                    AND   yyyymm BETWEEN substr(TO_CHAR(add_months(TO_DATE( (
+		                        SELECT
+		                            item1
+		                        FROM
+		                            ryscd01mt
+		                        WHERE
+		                            code_gr = 'G0'
+		                            AND   code_cd = '10'
+		                    ),'YYYYMMDD'),-2),'YYYYMMDD'),1,6) AND substr( (
+		                        SELECT
+		                            item1
+		                        FROM
+		                            ryscd01mt
+		                        WHERE
+		                            code_gr = 'G0'
+		                            AND   code_cd = '10'
+		                    ),1,6)
+		                    AND   mp_gbn = '20'
+		                    AND   confirm_status = 'AA'
+		                GROUP BY
+		                    yyyymm,
+		                    dept_cd
+		                UNION ALL
+		                SELECT
+		                    substr(confirm_date,1,6) yyyymm,
+		                    r_dam_dept_cd dept_cd,
+		                    0 pmok_amt,
+		                    0 sale_amt,
+		                    0 sale_amt1,
+		                    0 smok_amt,
+		                    nvl(SUM(sukm_amt),0) sukm_amt,
+		                    0 sukm_amt1
+		                FROM
+		                    rysd.ryscl01mt a
+		                WHERE
+		                    comp_cd = '20'
+		                    AND   confirm_date BETWEEN substr(TO_CHAR(add_months(TO_DATE( (
+		                        SELECT
+		                            item1
+		                        FROM
+		                            ryscd01mt
+		                        WHERE
+		                            code_gr = 'G0'
+		                            AND   code_cd = '10'
+		                    ),'YYYYMMDD'),-2),'YYYYMMDD'),1,6)
+		                    || '01' AND (
+		                        SELECT
+		                            item1
+		                        FROM
+		                            ryscd01mt
+		                        WHERE
+		                            code_gr = 'G0'
+		                            AND   code_cd = '10'
+		                    )
+		                    AND   confirm_status = 'AA'
+		                    AND   sukm_gbn <= '59'
+		                    AND   nvl(recover_gbn,'N') <> 'Y'
+		                    AND   nvl(daeson_gbn,'CL') <> 'DS'
+		                GROUP BY
+		                    substr(confirm_date,1,6),
+		                    r_dam_dept_cd
+		                UNION ALL
+		                SELECT
+		                    substr(TO_CHAR(add_months(TO_DATE(confirm_date,'YYYYMMDD'),1),'YYYYMMDD'),1,6) yyyymm,
+		                    r_dam_dept_cd dept_cd,
+		                    0 pmok_amt,
+		                    0 sale_amt,
+		                    0 sale_amt1,
+		                    0 smok_amt,
+		                    0 sukm_amt,
+		                    nvl(SUM(sukm_amt),0) sukm_amt1
+		                FROM
+		                    rysd.ryscl01mt a
+		                WHERE
+		                    comp_cd = '20'
+		                    AND   confirm_date BETWEEN substr(TO_CHAR(add_months(TO_DATE( (
+		                        SELECT
+		                            item1
+		                        FROM
+		                            ryscd01mt
+		                        WHERE
+		                            code_gr = 'G0'
+		                            AND   code_cd = '10'
+		                    ),'YYYYMMDD'),-3),'YYYYMMDD'),1,6)
+		                    || '01' AND TO_CHAR(add_months(TO_DATE( (
+		                        SELECT
+		                            item1
+		                        FROM
+		                            ryscd01mt
+		                        WHERE
+		                            code_gr = 'G0'
+		                            AND   code_cd = '10'
+		                    ),'YYYYMMDD'),-1),'YYYYMM')
+		                    || '31'
+		                    AND   confirm_status = 'AA'
+		                    AND   sukm_gbn <= '59'
+		                    AND   nvl(recover_gbn,'N') <> 'Y'
+		                    AND   nvl(daeson_gbn,'CL') <> 'DS'
+		                GROUP BY
+		                    substr(TO_CHAR(add_months(TO_DATE(confirm_date,'YYYYMMDD'),1),'YYYYMMDD'),1,6),
+		                    r_dam_dept_cd
+		            ) a,
+		            (
+		                SELECT
+		                    *
+		                FROM
+		                    rysd.ryscd02mt
+		                CONNECT BY
+		                    PRIOR dept_cd = h_dept_cd
+		                START WITH dept_cd = '10000'
+		            ) b
+		        WHERE
+		            a.dept_cd = b.dept_cd
+		        GROUP BY
+		            ROLLUP(a.yyyymm,
+		            b.gubun1,
+		            b.gubun2,
+		            a.dept_cd)
+		        HAVING
+		            GROUPING(a.yyyymm)
+		            || GROUPING(b.gubun1)
+		            || GROUPING(b.gubun2)
+		            || GROUPING(a.dept_cd) IN (
+		                '0011',
+		                '0111'
+		            )
+		    ) a,
+		    rysd.ryscd02mt b,
+		    (
+		        SELECT
+		            code_cd,
+		            code_nm
+		        FROM
+		            rysd.ryscd01mt
+		        WHERE
+		            code_gr = 'L7'
+		    ) d,
+		    (
+		        SELECT
+		            code_cd,
+		            code_nm
+		        FROM
+		            rysd.ryscd01mt
+		        WHERE
+		            code_gr = 'L8'
+		    ) e
+		WHERE
+		    nvl(a.dept_cd,'*') = b.dept_cd (+)
+		    AND   nvl(a.gubun1,'*') = d.code_cd (+)
+		    AND   nvl(a.gubun2,'*') = e.code_cd (+)
+		    AND   nvl(a.gubun1,'*')
+		    || nvl(a.gubun2,'*')
+		    || nvl(a.dept_cd,'*') <> '1G*'
+		    AND   nvl(a.gubun1,'*')
+		    || nvl(a.gubun2,'*')
+		    || nvl(a.dept_cd,'*') <> '3G*'
+		    AND   nvl(a.gubun1,'*')
+		    || nvl(a.gubun2,'*')
+		    || nvl(a.dept_cd,'*') <> '9G*'
+		ORDER BY
+		    a.yyyymm,
+		    nvl(a.gubun1,'ZZ')
+		]]>
+	</select>
+	
+</mapper>

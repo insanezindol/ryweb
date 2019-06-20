@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.gwif.SchedulerMapper_Gwif">
+	
+	<select id="selectPwdInfo" resultType="GwPwdInfo">
+		SELECT /* selectPwdInfo */
+			SITE_NO,
+			SITE_INFO,
+			TYPE,
+			REG_DATE
+		FROM GWIF.dbo.ENAGE_P_INFO
+		WHERE TYPE = 'GW' AND REG_DATE IS NULL
+	</select>
+	
+	<update id="updatePwdInfo" parameterType="GwPwdInfo">
+		UPDATE /* updatePwdInfo */
+			GWIF.dbo.ENAGE_P_INFO
+		SET REG_DATE = GETDATE()
+		WHERE SITE_NO = #{siteNo} AND SITE_INFO = #{siteInfo}
+	</update>
+	
+	<delete id="deletePwdInfo" parameterType="GwPwdInfo">
+		DELETE /* deletePwdInfo */
+		FROM GWIF.dbo.ENAGE_P_INFO
+		WHERE SITE_NO = #{siteNo} AND SITE_INFO = #{siteInfo}
+	</delete>
+	
+	<delete id="deleteReyonSaleList" parameterType="SaleInfo">
+		<![CDATA[
+		DELETE /* deleteReyonSaleList */
+		FROM GWIF.dbo.ENAGE_SALE_SUKM
+		WHERE YYYYMM >= SUBSTRING(CONVERT(VARCHAR(10),DATEADD(MONTH,-2,CONVERT (DATE, #{gijunDate})),112),1,6)
+		]]>
+	</delete>
+	
+	<insert id="insertReyonSaleInfo" parameterType="SaleInfo">
+		INSERT /* insertAlarm */
+		INTO GWIF.dbo.ENAGE_SALE_SUKM (
+			YYYYMM,
+			GUBUN1,
+			GIJUN_DATE,
+			DEPT_NM,
+			PMOK_AMT,
+			SALE_AMT,
+			PMOK_RATE,
+			PRE_SALE_AMT,
+			SMOK_AMT,
+			SUKM_AMT,
+			SMOK_RATE,
+			PRE_SUKM_AMT,
+			REG_DATE
+		) VALUES (
+			#{yyyymm},
+			#{gubun1},
+			#{gijunDate},
+			#{deptNm},
+			#{pmokAmt},
+			#{saleAmt},
+			#{pmokRate},
+			#{preSaleAmt},
+			#{smokAmt},
+			#{sukmAmt},
+			#{smokRate},
+			#{preSukmAmt},
+			GETDATE()
+		)
+	</insert>
+	
+	<select id="selectApprovalProceedingList" resultType="GwApprovalInfo">
+		SELECT /* selectApprovalProceedingList */
+			APPRO_KEY,
+			APPRO_STATE,
+			FCODE,
+			GW_TO_MIS_STATUS
+		FROM
+			GWIF.dbo.tblMisAppro
+		WHERE 1=1
+			AND GW_TO_MIS_STATUS = 'N'
+			AND APPRO_STATE = '0'
+	</select>
+
+	<select id="selectApprovalCompeleteList" resultType="GwApprovalInfo">
+		SELECT /* selectApprovalCompeleteList */
+			APPRO_KEY,
+			APPRO_STATE,
+			FCODE,
+			GW_TO_MIS_STATUS
+		FROM
+			GWIF.dbo.tblMisAppro
+		WHERE 1=1
+			AND GW_TO_MIS_STATUS = 'N'
+			AND APPRO_STATE NOT IN ('0','2')
+	</select>
+	
+	<update id="updateApprovalCompeleteStatus" parameterType="GwApprovalInfo">
+		UPDATE /* updateApprovalCompeleteStatus */
+			GWIF.dbo.tblMisAppro
+		SET GW_TO_MIS_STATUS = 'Y', GW_TO_MIS_DATETIME = GETDATE()
+		WHERE APPRO_KEY = #{approKey}
+	</update>
+	
+	<!-- -1(반려), 1(승인), 2(미제출), 3(기안취소) 삭제 -->
+	<delete id="deleteApprovalList">
+		<![CDATA[
+		DELETE /* deleteApprovalList */
+			GWIF.dbo.tblMisAppro
+		WHERE 
+		(APPRO_STATE IN ('-1','1','2','3') AND GW_TO_MIS_DATETIME <= DATEADD(MONTH,-1,GETDATE())) OR
+		(APPRO_STATE IN ('2') AND UP_DATE <= DATEADD(MONTH,-1,GETDATE()) AND USER_NUM IS NULL) 
+		]]>
+	</delete>
+	
+</mapper>

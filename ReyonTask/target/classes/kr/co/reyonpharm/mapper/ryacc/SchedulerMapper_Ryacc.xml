@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryacc.SchedulerMapper_Ryacc">
+	
+	<update id="updateApprovalProceedingStatusJp" parameterType="GwApprovalInfo">
+		UPDATE /* updateApprovalProceedingStatusJp */
+			RYACC.RYATS01MT
+		SET GW_STATUS = #{gwStatus}, GW_ICHE_DATETIME = TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS')
+		WHERE TS_YY = #{tsYy} AND TS_NO = #{tsNo} AND GW_STATUS IS NULL
+	</update>
+	
+	<update id="updateApprovalProceedingStatusYs" parameterType="GwApprovalInfo">
+		UPDATE /* updateApprovalProceedingStatusYs */
+			RYACC.RYABG05MT
+		SET GW_STATUS = #{gwStatus}, GW_ICHE_DATETIME = TO_CHAR(SYSDATE, 'YYYYMMDDHH24MISS'), CONFIRM_STATUS = '10'
+		WHERE REQ_DATE = #{reqDate} AND REQ_DEPT_CODE = #{reqDeptCode} AND REQ_SEQ = #{reqSeq} AND GW_STATUS IS NULL
+	</update>
+	
+	<update id="updateApprovalCompeleteStatusJp" parameterType="GwApprovalInfo">
+		UPDATE /* updateApprovalCompeleteStatusJp */
+			RYACC.RYATS01MT
+		SET GW_STATUS = #{gwStatus}
+		WHERE TS_YY = #{tsYy} AND TS_NO = #{tsNo}
+	</update>
+	
+	<update id="updateApprovalCompeleteStatusYs" parameterType="GwApprovalInfo">
+		UPDATE /* updateApprovalCompeleteStatusYs */
+			RYACC.RYABG05MT
+		SET GW_STATUS = #{gwStatus}
+		<if test="gwStatus == '1'.toString()">, CONFIRM_STATUS = '10'</if>
+		<if test="gwStatus == '-1'.toString()">, CONFIRM_STATUS = 'XX'</if>
+		<if test="gwStatus == '3'.toString()">, CONFIRM_STATUS = null</if>
+		WHERE REQ_DATE = #{reqDate} AND REQ_DEPT_CODE = #{reqDeptCode} AND REQ_SEQ = #{reqSeq}
+	</update>
+	
+</mapper>

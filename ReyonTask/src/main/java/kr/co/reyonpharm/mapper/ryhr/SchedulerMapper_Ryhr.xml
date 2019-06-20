@@ -1,0 +1,536 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.SchedulerMapper_Ryhr">
+	
+	<select id="selectTotalUserList" parameterType="UserInfo" resultType="UserInfo">
+		SELECT /* selectTotalUserList */
+		    A.SABUN, 
+		    A.KNAME, 
+		    A.DEPT_CODE, 
+		    B.DEPT_NAME, 
+		    A.POSIT_CD, 
+		    C.POS_LOG
+		FROM 
+		    RYHR.RYHZZ01MT A, 
+		    RYHR.RYHZZ02MT B, 
+		    RYHR.RYHAA20MT C
+		WHERE 
+		    A.DEPT_CODE = B.DEPT_CODE
+			AND A.POSIT_CD = C.POSIT_CD
+			AND NVL(A.RETIRE_DAY,'99991231') <![CDATA[>=]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+		ORDER BY 
+		    A.DEPT_CODE, C.POSIT_CD
+	</select>
+	
+	<select id="selectTotalDeptList" parameterType="DeptInfo" resultType="DeptInfo">
+		SELECT /* selectTotalDeptList */
+		    A.DEPT_CODE,
+		    A.DEPT_PARCO,
+		    DECODE(B.DEPT_NAME,'이연제약','(직속)',B.DEPT_NAME) DEPT_PARCO_NAME,
+		    A.DEPT_NAME,
+		    A.STATE_GB,
+		    A.REG_CODE
+		FROM 
+		    RYHR.RYHZZ02MT A
+		    LEFT OUTER JOIN RYHR.RYHZZ02MT B ON A.DEPT_PARCO = B.DEPT_CODE
+		WHERE 1=1
+		    AND A.STATE_GB = '1'
+		    AND A.DEPT_CODE != '0001'
+		    <if test="deptParco != null and deptParco != ''">
+			START WITH A.DEPT_CODE = #{deptParco}
+			CONNECT BY PRIOR A.DEPT_CODE = A.DEPT_PARCO
+			</if>
+		ORDER BY A.REG_CODE, A.DEPT_CODE
+	</select>
+	
+	<select id="selectMeetingResultStatusList" resultType="MeetingInfo">
+		SELECT /* selectMeetingResultStatusList */
+			MEETING_SEQ,
+			PROJECT_SEQ,
+			MEETING_NAME,
+			TO_CHAR(MEETING_START_DATE, 'YYYY-MM-DD HH24:MI') MEETING_START_DATE,
+			TO_CHAR(MEETING_END_DATE, 'YYYY-MM-DD HH24:MI') MEETING_END_DATE,
+			MEETING_PLACE,
+			MEETING_TYPE,
+			MEETING_STATUS,
+			SAUP_CODE,
+			DEPT_CODE,
+			DEPT_NAME,
+			REG_SABUN,
+			REG_NAME,
+			UPD_SABUN,
+            UPD_NAME,
+			MEETING_REG_DATE,
+			MEETING_UPD_DATE,
+			VISIT_COMPANY,
+			VISIT_NAME,
+			MEETING_CONTENTS,
+			DECISION_CONTENTS,
+			PLAN_CONTENTS,
+			ISSUE_CONTENTS,
+			ATTACH_FILEPATH1,
+			ATTACH_FILENAME1,
+			ATTACH_FILESIZE1,
+			MEETING_RESULT_REG_DATE,
+			MEETING_RESULT_UPD_DATE,
+			SACTION_SABUN,
+			SACTION_NAME,
+			SACTION_DATE,
+			SACTION_COMMENT,
+			CONFIRM_SABUN,
+			CONFIRM_NAME,
+			CONFIRM_DATE,
+			CONFIRM_COMMENT,
+			RETURN_SABUN,
+			RETURN_NAME,
+			RETURN_DATE,
+			RETURN_COMMENT,
+			ATTACH_FILEPATH2,
+			ATTACH_FILENAME2,
+			ATTACH_FILESIZE2,
+			ATTACH_FILEPATH3,
+			ATTACH_FILENAME3,
+			ATTACH_FILESIZE3,
+			ATTACH_FILEPATH4,
+			ATTACH_FILENAME4,
+			ATTACH_FILESIZE4,
+			ATTACH_FILEPATH5,
+			ATTACH_FILENAME5,
+			ATTACH_FILESIZE5
+		FROM
+			RYHR.RYHCF02MT
+		WHERE 
+			MEETING_STATUS = '01' 
+			AND MEETING_END_DATE <![CDATA[<=]]> SYSDATE 
+	</select>
+	
+	<update id="updateMeetingResultStatusToResult" parameterType="MeetingInfo">
+		UPDATE /* updateMeetingResultStatusToResult */
+		RYHR.RYHCF02MT 
+		SET 
+			MEETING_STATUS = '02'
+		WHERE 
+			MEETING_STATUS = '01' AND MEETING_SEQ = #{meetingSeq}
+	</update>
+	
+	<update id="updateMeetingResultStatusToComplete">
+		UPDATE /* updateMeetingResultStatusToComplete */
+		RYHR.RYHCF02MT 
+		SET 
+			MEETING_STATUS = 'BB'
+		WHERE 
+			MEETING_STATUS = '05' 
+			AND MEETING_END_DATE <![CDATA[<=]]> SYSDATE 
+	</update>
+	
+	<select id="selectIncompleteList" resultType="MeetingInfo">
+		SELECT /* selectIncompleteList */
+			MEETING_SEQ,
+			PROJECT_SEQ,
+			MEETING_NAME,
+			TO_CHAR(MEETING_START_DATE, 'YYYY-MM-DD HH24:MI') MEETING_START_DATE,
+			TO_CHAR(MEETING_END_DATE, 'YYYY-MM-DD HH24:MI') MEETING_END_DATE,
+			MEETING_PLACE,
+			MEETING_TYPE,
+			MEETING_STATUS,
+			SAUP_CODE,
+			DEPT_CODE,
+			DEPT_NAME,
+			REG_SABUN,
+			REG_NAME,
+			UPD_SABUN,
+            UPD_NAME,
+			MEETING_REG_DATE,
+			MEETING_UPD_DATE,
+			VISIT_COMPANY,
+			VISIT_NAME,
+			MEETING_CONTENTS,
+			DECISION_CONTENTS,
+			PLAN_CONTENTS,
+			ISSUE_CONTENTS,
+			ATTACH_FILEPATH1,
+			ATTACH_FILENAME1,
+			ATTACH_FILESIZE1,
+			MEETING_RESULT_REG_DATE,
+			MEETING_RESULT_UPD_DATE,
+			SACTION_SABUN,
+			SACTION_NAME,
+			SACTION_DATE,
+			SACTION_COMMENT,
+			CONFIRM_SABUN,
+			CONFIRM_NAME,
+			CONFIRM_DATE,
+			CONFIRM_COMMENT,
+			RETURN_SABUN,
+			RETURN_NAME,
+			RETURN_DATE,
+			RETURN_COMMENT,
+			ATTACH_FILEPATH2,
+			ATTACH_FILENAME2,
+			ATTACH_FILESIZE2,
+			ATTACH_FILEPATH3,
+			ATTACH_FILENAME3,
+			ATTACH_FILESIZE3,
+			ATTACH_FILEPATH4,
+			ATTACH_FILENAME4,
+			ATTACH_FILESIZE4,
+			ATTACH_FILEPATH5,
+			ATTACH_FILENAME5,
+			ATTACH_FILESIZE5
+		FROM
+			RYHR.RYHCF02MT
+		WHERE 
+			MEETING_STATUS IN ('02','03','04','99') 
+	</select>
+	
+	<select id="selectContractForSendMail" resultType="ContractInfo">
+		SELECT /* selectContractForSendMail */
+			CONTRACT_SEQ,
+			SAUP_GUBUN,
+			DIVISION,
+			USERNAME,
+			TO_CHAR(START_DATE, 'YYYY-MM-DD') START_DATE,
+			TO_CHAR(END_DATE, 'YYYY-MM-DD') END_DATE,
+			ROAD_ADDR,
+			JIBUN_ADDR,
+			DETAIL_ADDR,
+			SINM,
+			ZIPNO,
+			PAYMENT,
+			DEPOSIT,
+			RENT,
+			ADMINISTRATIVE_EXPENSES,
+			REMARKS,
+			ATTACH_FILEPATH,
+			ATTACH_FILENAME,
+			ATTACH_FILESIZE,
+			STATUS,
+			REG_SABUN,
+			REG_NAME,
+			TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			UPD_SABUN,
+			UPD_NAME,
+			TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE,
+            CEIL(END_DATE-SYSDATE) LIMIT_DAY
+		FROM RYHR.RYHCF08MT
+		WHERE 1=1
+            AND TO_CHAR(END_DATE,'YYYYMMDD') <![CDATA[>=]]> TO_CHAR(SYSDATE,'YYYYMMDD')
+            AND TO_CHAR(END_DATE,'YYYYMMDD') <![CDATA[<=]]> TO_CHAR(SYSDATE+30,'YYYYMMDD')
+	</select>
+	
+	<select id="selectContractUpdateStatusForSendMail" resultType="ContractInfo">
+		SELECT /* selectContractUpdateStatusForSendMail */
+			CONTRACT_SEQ,
+			SAUP_GUBUN,
+			DIVISION,
+			USERNAME,
+			TO_CHAR(START_DATE, 'YYYY-MM-DD') START_DATE,
+			TO_CHAR(END_DATE, 'YYYY-MM-DD') END_DATE,
+			ROAD_ADDR,
+			JIBUN_ADDR,
+			DETAIL_ADDR,
+			SINM,
+			ZIPNO,
+			PAYMENT,
+			DEPOSIT,
+			RENT,
+			ADMINISTRATIVE_EXPENSES,
+			REMARKS,
+			ATTACH_FILEPATH,
+			ATTACH_FILENAME,
+			ATTACH_FILESIZE,
+			STATUS,
+			REG_SABUN,
+			REG_NAME,
+			TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			UPD_SABUN,
+			UPD_NAME,
+			TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE,
+            FLOOR(SYSDATE-END_DATE) LIMIT_DAY
+		FROM RYHR.RYHCF08MT
+		WHERE 1=1
+            AND STATUS = 'ING' AND END_DATE <![CDATA[<]]> SYSDATE-1
+	</select>
+	
+	<select id="selectVehicleForSendMail" resultType="VehicleInfo">
+		SELECT /* selectVehicleForSendMail */
+			VEHICLE_SEQ,
+			VEHICLE_NO,
+			VEHICLE_TYPE,
+			DIVISION,
+			USERNAME,
+			PAYMENT,
+			TO_CHAR(RENT_START_DATE, 'YYYY-MM-DD') RENT_START_DATE,
+			TO_CHAR(RENT_END_DATE, 'YYYY-MM-DD') RENT_END_DATE,
+			RENT_MONEY,
+			TO_CHAR(INSURANCE_START_DATE, 'YYYY-MM-DD') INSURANCE_START_DATE,
+			TO_CHAR(INSURANCE_END_DATE, 'YYYY-MM-DD') INSURANCE_END_DATE,
+			INSURANCE_MONEY,
+			REMARKS,
+			ATTACH_FILEPATH,
+			ATTACH_FILENAME,
+			ATTACH_FILESIZE,
+			STATUS,
+			REG_SABUN,
+			REG_NAME,
+			TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			UPD_SABUN,
+			UPD_NAME,
+			TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE,
+			CEIL(RENT_END_DATE-SYSDATE) LIMIT_DAY
+		FROM RYHR.RYHCF12MT
+		WHERE 1=1
+            AND TO_CHAR(RENT_END_DATE,'YYYYMMDD') <![CDATA[>=]]> TO_CHAR(SYSDATE,'YYYYMMDD')
+            AND TO_CHAR(RENT_END_DATE,'YYYYMMDD') <![CDATA[<=]]> TO_CHAR(SYSDATE+30,'YYYYMMDD')
+	</select>
+	
+	<select id="selectVehicleUpdateStatusForSendMail" resultType="VehicleInfo">
+		SELECT /* selectVehicleUpdateStatusForSendMail */
+			VEHICLE_SEQ,
+			VEHICLE_NO,
+			VEHICLE_TYPE,
+			DIVISION,
+			USERNAME,
+			PAYMENT,
+			TO_CHAR(RENT_START_DATE, 'YYYY-MM-DD') RENT_START_DATE,
+			TO_CHAR(RENT_END_DATE, 'YYYY-MM-DD') RENT_END_DATE,
+			RENT_MONEY,
+			TO_CHAR(INSURANCE_START_DATE, 'YYYY-MM-DD') INSURANCE_START_DATE,
+			TO_CHAR(INSURANCE_END_DATE, 'YYYY-MM-DD') INSURANCE_END_DATE,
+			INSURANCE_MONEY,
+			REMARKS,
+			ATTACH_FILEPATH,
+			ATTACH_FILENAME,
+			ATTACH_FILESIZE,
+			STATUS,
+			REG_SABUN,
+			REG_NAME,
+			TO_CHAR(REG_DATE, 'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			UPD_SABUN,
+			UPD_NAME,
+			TO_CHAR(UPD_DATE, 'YYYY-MM-DD HH24:MI:SS') UPD_DATE,
+			FLOOR(SYSDATE-RENT_END_DATE) LIMIT_DAY
+		FROM RYHR.RYHCF12MT
+		WHERE 1=1
+            AND STATUS = 'ING' AND RENT_END_DATE <![CDATA[<]]> SYSDATE-1
+	</select>
+	
+	<select id="selectConfirmInfoList" parameterType="ConfirmInfo" resultType="ConfirmInfo">
+		SELECT /* selectConfirmInfoList */
+			A.DEPT_CODE DEPT_CODE,
+		    C.DEPT_NAME DEPT_NAME,
+		    A.SABUN SABUN,
+		    B.KNAME KNAME
+		FROM
+			RYHR.RYHAH25IT A, RYHR.RYHZZ01MT B, RYHR.RYHZZ02MT C
+		WHERE 1=1
+			AND A.SABUN = B.SABUN
+			AND B.DEPT_CODE = C.DEPT_CODE
+			AND NVL(B.RETIRE_DAY,'99991231') <![CDATA[>=]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+		<if test=" sabun != null and sabun != '' ">
+			AND A.SABUN = #{sabun}
+		</if>
+		<if test=" deptCode != null and deptCode != '' ">
+			AND A.DEPT_CODE = #{deptCode}
+		</if>
+		ORDER BY A.DEPT_CODE
+	</select>
+	
+	<select id="selectUserEmail" parameterType="UserInfo" resultType="UserInfo">
+		SELECT /* selectUserEmail */
+		    A.SABUN, 
+		    A.KNAME, 
+		    B.REYON_MAIL
+		FROM 
+		    RYHR.RYHZZ01MT A
+		    LEFT OUTER JOIN RYHR.RYHAA01IT B ON A.SABUN = B.SABUN
+		WHERE 1=1 
+			AND A.SABUN = #{sabun}
+		    AND NVL(A.RETIRE_DAY,'99991231') <![CDATA[>=]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+	</select>
+	
+	<delete id="deleteHrHistoryPwd" parameterType="GwPwdInfo">
+		DELETE /* deleteHrHistoryPwd */
+		FROM RYHR.RYHZZ03IT
+		WHERE SABUN = #{siteNo} AND YYMM = TO_CHAR(SYSDATE, 'YYYYMM')
+	</delete>
+	
+	<insert id="insertHrHistoryPwd" parameterType="GwPwdInfo">
+		INSERT /* insertHrHistoryPwd */
+		INTO RYHR.RYHZZ03IT (
+			SABUN,
+			YYMM,
+			PASSWORD,
+			EDP_DATE
+		) VALUES (
+			#{siteNo},
+			TO_CHAR(SYSDATE, 'YYYYMM'),
+			#{encSiteInfo},
+			TO_CHAR(SYSDATE, 'YYYYMMDD')
+		)
+	</insert>
+	
+	<update id="updateHrPwd" parameterType="GwPwdInfo">
+		UPDATE /* updateHrPwd */
+			RYHR.RYHZZ03MT 
+		SET 
+			PASSWORD = #{encSiteInfo},
+			CHANGE_PWD_DATE = TO_CHAR(SYSDATE, 'YYYYMMDD')
+		WHERE 
+			SABUN = #{siteNo}
+	</update>
+	
+	<select id="selectSendAlarmList" resultType="AlarmInfo">
+		SELECT /* selectSendAlarmList */
+		    A.ALARM_SEQ,
+		    A.ALARM_SABUN,
+		    TO_CHAR(A.ALARM_DATE, 'YYYY-MM-DD HH24:MI') ALARM_DATE,
+		    A.ALARM_YN,
+		    A.ALARM_TITLE,
+		    A.ALARM_CONTENTS,
+		    TO_CHAR(A.REG_DATE, 'YYYY-MM-DD HH24:MI') REG_DATE,
+		    A.REG_SABUN,
+		    A.REG_NAME,
+		    TO_CHAR(A.RESULT_DATE, 'YYYY-MM-DD HH24:MI') RESULT_DATE,
+			A.RESULT_MSG,
+		    B.TOKEN_ID,
+		    B.DEVICE_TYPE,
+		    B.MSG_RECEIVE_TYPE
+		FROM
+		    RYHR.RYHCF11MT A
+		    LEFT OUTER JOIN RYHR.RYHCF07MT B ON A.ALARM_SABUN = B.SABUN
+		WHERE 1=1
+			AND A.ALARM_YN = 'N'
+			AND A.ALARM_DATE <![CDATA[<=]]> SYSDATE
+	</select>
+	
+	<update id="updateAlarm" parameterType="AlarmInfo">
+		UPDATE /* updateAlarm */
+			RYHR.RYHCF11MT
+		SET
+			ALARM_YN = #{alarmYn},
+			RESULT_DATE = SYSDATE,
+			RESULT_MSG = #{resultMsg}
+		WHERE
+			ALARM_SEQ = #{alarmSeq} 
+	</update>
+	
+	<select id="selectGroupwareExtIngList" resultType="GroupwareExtInfo">
+		SELECT /* selectGroupwareExtIngList */
+			t1.REQ_SEQ,
+			t1.SABUN,
+			t2.KNAME,
+			t3.DEPT_NAME,
+			TO_CHAR(t1.START_DATE, 'YYYY-MM-DD HH24:MI') START_DATE,
+			TO_CHAR(t1.END_DATE, 'YYYY-MM-DD HH24:MI') END_DATE,
+			t1.ACCESS_ING_TYPE,
+			t1.ACCESS_END_TYPE,
+			t1.REQ_COMMENT,
+			t1.STATUS
+		FROM 
+			RYHR.RYHCF16MT t1
+			INNER JOIN RYHR.RYHZZ01MT t2 ON t1.SABUN = t2.SABUN
+			INNER JOIN RYHR.RYHZZ02MT t3 ON t2.DEPT_CODE = t3.DEPT_CODE
+		WHERE 1=1
+			AND t1.STATUS = '1'
+			AND t1.START_DATE <![CDATA[<=]]> SYSDATE
+		ORDER BY t1.REQ_SEQ DESC
+	</select>
+	
+	<select id="selectGroupwareExtEndList" resultType="GroupwareExtInfo">
+		SELECT /* selectGroupwareExtEndList */
+			t1.REQ_SEQ,
+			t1.SABUN,
+			t2.KNAME,
+			t3.DEPT_NAME,
+			TO_CHAR(t1.START_DATE, 'YYYY-MM-DD HH24:MI') START_DATE,
+			TO_CHAR(t1.END_DATE, 'YYYY-MM-DD HH24:MI') END_DATE,
+			t1.ACCESS_ING_TYPE,
+			t1.ACCESS_END_TYPE,
+			t1.REQ_COMMENT,
+			t1.STATUS
+		FROM 
+			RYHR.RYHCF16MT t1
+			INNER JOIN RYHR.RYHZZ01MT t2 ON t1.SABUN = t2.SABUN
+			INNER JOIN RYHR.RYHZZ02MT t3 ON t2.DEPT_CODE = t3.DEPT_CODE
+		WHERE 1=1
+			AND t1.STATUS = '2'
+			AND t1.END_DATE <![CDATA[<=]]> SYSDATE
+		ORDER BY t1.REQ_SEQ DESC
+	</select>
+	
+	<update id="updateGroupwareExt" parameterType="GroupwareExtInfo">
+		UPDATE /* updateGroupwareExt */
+			RYHR.RYHCF16MT
+		SET
+			STATUS = #{status}
+		WHERE
+			REQ_SEQ = #{reqSeq} 
+	</update>
+	
+	<select id="selectPhonenumberList" parameterType="PhoneInfo" resultType="PhoneInfo">
+		SELECT /* selectPhonenumberList */
+		    A.SABUN,
+		    A.KNAME,
+		    CASE
+		        WHEN B.PHONE_TYPE1 IS NOT NULL AND B.PHONENUM1 IS NOT NULL THEN 
+		        (CASE 
+		            WHEN INSTR(B.PHONENUM1,'-') IS NOT NULL AND INSTR(B.PHONENUM1,'-') != 0 THEN B.PHONENUM1
+		            ELSE (CASE 
+		                    WHEN LENGTH(B.PHONENUM1) = 4 THEN '02-3407-'||B.PHONENUM1
+		                    ELSE '02-3407-5'||B.PHONENUM1
+		                END)
+		        END)
+		        WHEN B.PHONE_TYPE2 IS NOT NULL AND B.PHONENUM2 IS NOT NULL THEN
+		        (CASE 
+		            WHEN INSTR(B.PHONENUM2,'-') IS NOT NULL AND INSTR(B.PHONENUM2,'-') != 0 THEN B.PHONENUM2
+		            ELSE (CASE 
+		                    WHEN LENGTH(B.PHONENUM2) = 4 THEN '043-531-'||B.PHONENUM2
+		                    ELSE '043-531-3'||B.PHONENUM2
+		                END)
+		        END)
+		        WHEN B.PHONE_TYPE3 IS NOT NULL AND B.PHONENUM3 IS NOT NULL THEN
+		        (CASE 
+		            WHEN INSTR(B.PHONENUM3,'-') IS NOT NULL AND INSTR(B.PHONENUM3,'-') != 0 THEN B.PHONENUM3
+		            ELSE (CASE 
+		                    WHEN LENGTH(B.PHONENUM3) = 4 THEN '043-840-'||B.PHONENUM3
+		                    ELSE '043-840-6'||B.PHONENUM3
+		                END)
+		        END)
+		    END PHONENUM
+		FROM
+		    RYHR.RYHZZ01MT A, RYHCF19MT B
+		WHERE 1=1
+		    AND A.SABUN = B.SABUN
+		    AND NVL(A.RETIRE_DAY,'99991231') <![CDATA[>=]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+	</select>
+	
+	<update id="updateApprovalProceedingStatusHoliday" parameterType="GwApprovalInfo">
+		UPDATE /* updateApprovalProceedingStatusHoliday */
+			RYHR.RYHCH01IT
+		SET GW_STATUS = #{gwStatus}, GW_UPD_DATE = SYSDATE
+		WHERE HOLIDAY_SEQ = #{holidaySeq} AND GW_STATUS = '2'
+	</update>
+	
+	<update id="updateApprovalCompeleteStatusHoliday" parameterType="GwApprovalInfo">
+		UPDATE /* updateApprovalCompeleteStatusHoliday */
+			RYHR.RYHCH01IT
+		SET GW_STATUS = #{gwStatus}, GW_UPD_DATE = SYSDATE
+		WHERE HOLIDAY_SEQ = #{holidaySeq}
+	</update>
+	
+	<update id="updateApprovalProceedingStatusOvertime" parameterType="GwApprovalInfo">
+		UPDATE /* updateApprovalProceedingStatusOvertime */
+			RYHR.RYHCH02IT
+		SET GW_STATUS = #{gwStatus}, GW_UPD_DATE = SYSDATE
+		WHERE OVERTIME_SEQ = #{overtimeSeq} AND GW_STATUS = '2'
+	</update>
+	
+	<update id="updateApprovalCompeleteStatusOvertime" parameterType="GwApprovalInfo">
+		UPDATE /* updateApprovalCompeleteStatusOvertime */
+			RYHR.RYHCH02IT
+		SET GW_STATUS = #{gwStatus}, GW_UPD_DATE = SYSDATE
+		WHERE OVERTIME_SEQ = #{overtimeSeq}
+	</update>
+	
+</mapper>

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryxrs.SchedulerMapper_Ryxrs">
+	
+	<select id="selectGwMailInfoList" resultType="GwMailInfo">
+		SELECT /* selectGwMailInfoList */
+			MFROM,
+			MFROM_NAME,
+			MTO,
+			TO_CHAR(RCV_DATE, 'YYYY-MM-DD HH24:MI:SS') RCV_DATE,
+			SUBJECT,
+			CONTENTS,
+			ISSEND
+		FROM
+			RYXRS.TBLMAILQUEUE
+		WHERE 1=1
+			AND ISSEND = 0
+			AND MFROM IS NOT NULL
+	</select>
+	
+	<update id="updateGwMailInfo" parameterType="GwMailInfo">
+		UPDATE /* updateGwMailInfo */
+			RYXRS.TBLMAILQUEUE
+		SET
+			ISSEND = 1
+		WHERE 1=1
+			AND MFROM = #{mfrom}
+			AND MFROM_NAME = #{mfromName}
+			AND MTO = #{mto}
+			AND TO_CHAR(RCV_DATE, 'YYYY-MM-DD HH24:MI:SS') = #{rcvDate}
+			AND SUBJECT = #{subject}
+			AND ISSEND = #{issend}
+	</update>
+	
+	<delete id="deleteGwMailInfo">
+		DELETE /* deleteGwMailInfo */
+		FROM RYXRS.TBLMAILQUEUE
+		WHERE RCV_DATE <![CDATA[<=]]> ADD_MONTHS(SYSDATE, -1)
+	</delete>
+	
+	<select id="selectPwdInfo" resultType="GwPwdInfo">
+		SELECT /* selectPwdInfo */
+			SITE_NO,
+			SITE_INFO,
+			PROCESS_DATE
+		FROM
+			RYXRS.ENAGE_P_INFO
+		WHERE 1=1
+			AND PROCESS_DATE IS NULL
+	</select>
+	
+	<update id="updatePwdInfo" parameterType="GwPwdInfo">
+		UPDATE /* updatePwdInfo */
+			RYXRS.ENAGE_P_INFO
+		SET
+			PROCESS_DATE = SYSDATE
+		WHERE 1=1
+			AND SITE_NO = #{siteNo}
+			AND SITE_INFO = #{siteInfo}
+	</update>
+	
+	<delete id="deletePwdInfo" parameterType="GwPwdInfo">
+		DELETE /* deletePwdInfo */
+		FROM RYXRS.ENAGE_P_INFO
+		WHERE 1=1
+		AND SITE_NO = #{siteNo}
+		AND SITE_INFO = #{siteInfo}
+	</delete>
+	
+	<insert id="insertBtsInfo" parameterType="BtsInfo">
+		INSERT /* insertComing */
+		INTO RYXRS.BTS_SLITEMTAKINGOUT_ETC (
+			OUTDATE, 
+			CUSTCODE, 
+			ECUSTCODE, 
+			ITEMCODE, 
+			OUTQTY,	
+			ORDERNO, 
+			SEQ, 
+			SERIALNO, 
+			AGG1, 
+			AGG2, 
+			AGG4, 
+			JUMN_NO, 
+			JPM_SEQ, 
+			EDP_DATE 
+		) VALUES (
+			#{outdate},
+			#{custcode,jdbcType=VARCHAR},
+			#{ecustcode,jdbcType=VARCHAR},
+			#{itemcode,jdbcType=VARCHAR},
+			#{outqty,jdbcType=INTEGER},
+			#{orderno,jdbcType=VARCHAR},
+			#{seq},
+			#{serialno,jdbcType=VARCHAR},
+			#{agg1,jdbcType=VARCHAR},
+			#{agg2,jdbcType=VARCHAR},
+			#{agg4,jdbcType=VARCHAR},
+			#{jumnNo,jdbcType=VARCHAR},
+			#{jpmSeq},
+			TO_CHAR(SYSDATE,'YYYYMMDDHH24MISS')
+		)
+	</insert>
+	
+	<delete id="deleteBtsInfo" parameterType="BtsInfo">
+		DELETE /* deleteBtsInfo */
+		FROM RYXRS.BTS_SLITEMTAKINGOUT_ETC
+		WHERE OUTDATE = #{outdate}
+	</delete>
+	
+</mapper>

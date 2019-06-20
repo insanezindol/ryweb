@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.gw.SchedulerMapper_Gw">
+	
+	<insert id="insertGwMailInfo" parameterType="GwMailInfo">
+		INSERT /* insertGwMailInfo */
+		INTO GWareNet10_reyonpharm.dbo.TBLMAILQUEUE (
+			MFROM,
+			MFROM_NAME,
+			MTO,
+			RCV_DATE,
+			SUBJECT,
+			CONTENTS
+		) VALUES (
+			#{mfrom},
+			#{mfromName},
+			#{mto},
+			CONVERT(DATETIME, #{rcvDate}),
+			#{subject},
+			#{contents}
+		)
+	</insert>
+	
+	<update id="updateGwPwd" parameterType="GwPwdInfo">
+		UPDATE /* updateGwPwd */
+			GWareNet10_reyonpharm.dbo.TBLUSER
+		SET
+			PASSWORD = #{siteInfo}
+		WHERE 1=1
+			AND ISDELETE = '0'
+			AND COM_NUM = #{siteNo}
+	</update>
+	
+	<update id="updateGwExtStatus" parameterType="GroupwareExtInfo">
+		UPDATE /* updateGwExtStatus */
+			GWareNet10_reyonpharm.dbo.TBLUSER
+		SET
+		<if test="status == 1">
+			ACCESS_TYPE = #{accessIngType}
+		</if>
+		<if test="status == 2">
+			ACCESS_TYPE = #{accessEndType}
+		</if>
+		WHERE 1=1
+			AND ISDELETE = '0'
+			AND COM_NUM = #{sabun} 
+	</update>
+	
+	<update id="updatePhonenumberInfo" parameterType="PhoneInfo">
+		UPDATE /* updatePhonenumberInfo */
+			GWareNet10_reyonpharm.dbo.TBLUSER
+		SET COM_TEL = #{phonenum}
+		WHERE COM_NUM = #{sabun}
+	</update>
+	
+</mapper>
