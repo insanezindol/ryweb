@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.AppMapper_Ryhr">
+	
+	<select id="selectUserInfo" parameterType="UserInfo" resultType="UserInfo">
+		SELECT /* selectUserInfo */
+			A.SABUN, 
+			A.KNAME, 
+			A.KNAME FNAME,
+			A.DEPT_CODE, 
+			B.DEPT_NAME, 
+			C.PASSWORD,
+			CASE 
+                WHEN B.DEPT_CODE IN ('7050','7100','7010','7020','7130','7200','7030','7040','7080','7300','7400','7060','7070','7500','7600','7110','7120') THEN '20'
+                /* WHEN B.DEPT_CODE IN ('8620','8621','8622','8623','8624') THEN '30' */
+                WHEN B.DEPT_CODE IN ('6110','6210') THEN '40'
+                WHEN B.DEPT_CODE IN ('6410','6420') THEN '50'
+                ELSE '10'
+            END SAUPCODE, 
+			D.SAUP_NM SAUPNAME,
+			A.DEPT_CODE INSADEPT, 
+			E.DEPT_NAME INSANAME, 
+			A.RETIRE_DAY,
+			A.WORK_TYPE, 
+			B.ACC_CODE, 
+			A.GRADE, 
+			A.RESPON,
+            A.POSIT_CD,
+            F.POS_LOG
+		FROM 
+			RYHR.RYHZZ01MT A, RYHR.RYHZZ02MT B, RYHR.RYHZZ03MT C, RYACC.RYAZZ03MT D, RYHR.RYHZZ02MT E, RYHR.RYHAA20MT F
+		WHERE 1=1 
+			AND A.SABUN = C.SABUN(+)
+			AND A.DEPT_CODE = B.DEPT_CODE
+			AND A.SABUN = #{sabun}
+			AND A.SAUP_CD1||A.SAUP_CD2 = D.SAUP_CD
+			AND A.DEPT_CODE = E.DEPT_CODE
+	        AND A.POSIT_CD = F.POSIT_CD
+	        AND NVL(A.RETIRE_DAY,'99991231') <![CDATA[>=]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+	</select>
+	
+	<select id="selectTokenInfo" parameterType="TokenInfo" resultType="TokenInfo">
+		SELECT /* selectTokenInfo */
+			SABUN,
+			TOKEN_ID,
+			DEVICE_TYPE,
+			MSG_RECEIVE_TYPE,
+			REG_DATE,
+			UPD_DATE,
+			(SELECT ITEM1 FROM RYHR.RYHCD10MT WHERE GRP_CODE = 'AK') APP_VERSION
+		FROM 
+			RYHR.RYHCF07MT
+		WHERE 1=1
+			AND SABUN = #{sabun}
+	</select>
+	
+	<insert id="insertTokenInfo" parameterType="TokenInfo">
+		INSERT /* insertTokenInfo */
+		INTO RYHR.RYHCF07MT (
+			SABUN,
+			TOKEN_ID,
+			DEVICE_TYPE,
+			MSG_RECEIVE_TYPE,
+			REG_DATE,
+			UPD_DATE
+		) VALUES (
+			#{sabun},
+			#{tokenId},
+			#{deviceType},
+			#{msgReceiveType},
+			SYSDATE,
+			SYSDATE
+		)
+	</insert>
+	
+	<update id="modifyTokenInfo" parameterType="TokenInfo">
+		UPDATE /* modifyTokenInfo */
+			RYHR.RYHCF07MT 
+		SET 
+			TOKEN_ID = #{tokenId}, 
+			DEVICE_TYPE = #{deviceType},
+			MSG_RECEIVE_TYPE = #{msgReceiveType},
+			UPD_DATE = SYSDATE
+		WHERE SABUN = #{sabun} 
+	</update>
+	
+	<update id="modifyTokenInfoMsgType" parameterType="TokenInfo">
+		UPDATE /* modifyTokenInfoMsgType */
+			RYHR.RYHCF07MT 
+		SET 
+			MSG_RECEIVE_TYPE = #{msgReceiveType},
+			UPD_DATE = SYSDATE
+		WHERE SABUN = #{sabun} 
+	</update>
+	
+	<select id="selectAlarmList" resultType="AlarmInfo">
+		SELECT /* selectAlarmList */
+			A.ALARM_SEQ,
+			A.ALARM_SABUN,
+			B.KNAME ALARM_NAME,
+			TO_CHAR(A.ALARM_DATE, 'YYYY-MM-DD HH24:MI') ALARM_DATE,
+			A.ALARM_YN,
+			A.ALARM_TITLE,
+			A.ALARM_CONTENTS,
+			TO_CHAR(A.REG_DATE, 'YYYY-MM-DD HH24:MI') REG_DATE,
+			A.REG_SABUN,
+			A.REG_NAME,
+			TO_CHAR(A.RESULT_DATE, 'YYYY-MM-DD HH24:MI') RESULT_DATE,
+			A.RESULT_MSG
+		FROM
+			RYHR.RYHCF11MT A
+			LEFT OUTER JOIN RYHR.RYHZZ01MT B ON A.ALARM_SABUN = B.SABUN
+		WHERE 1=1
+			AND A.ALARM_SABUN = #{alarmSabun} 
+			AND A.ALARM_YN = #{alarmYn} 
+			AND A.ALARM_DATE >= ADD_MONTHS(SYSDATE,-1)
+		ORDER BY A.ALARM_DATE DESC, A.ALARM_SEQ DESC
+	</select>
+	
+</mapper>
