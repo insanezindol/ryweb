@@ -1,0 +1,63 @@
+package kr.co.reyonpharm.models;
+
+import lombok.Getter;
+import lombok.Setter;
+
+public class VoteInfo {
+	private @Getter @Setter String voteSabun;
+	private @Getter @Setter String voteDate;
+	private @Getter @Setter String voteN01;
+	private @Getter @Setter String voteN02;
+	private @Getter @Setter String voteN03;
+	private @Getter @Setter String voteN04;
+	private @Getter @Setter String voteN05;
+	private @Getter @Setter String voteN06;
+	private @Getter @Setter String voteN07;
+	private @Getter @Setter String voteN08;
+	private @Getter @Setter String voteN09;
+	private @Getter @Setter String voteN10;
+	private @Getter @Setter String voteN11;
+	private @Getter @Setter String voteN12;
+	private @Getter @Setter String voteN13;
+	private @Getter @Setter String voteN14;
+	private @Getter @Setter String voteN15;
+	private @Getter @Setter String voteN16;
+	private @Getter @Setter String voteN17;
+	private @Getter @Setter String voteN18;
+	private @Getter @Setter String voteN19;
+	private @Getter @Setter String voteN20;
+	private @Getter @Setter String voteN21;
+	private @Getter @Setter String voteN22;
+	private @Getter @Setter String voteN23;
+	private @Getter @Setter String voteN24;
+	private @Getter @Setter String voteN25;
+	private @Getter @Setter String voteN26;
+	private @Getter @Setter String voteN27;
+	private @Getter @Setter String voteN28;
+	private @Getter @Setter String voteN29;
+	private @Getter @Setter String voteN30;
+	private @Getter @Setter String voteN31;
+	private @Getter @Setter String voteN32;
+	private @Getter @Setter String voteN33;
+	private @Getter @Setter String voteN34;
+	private @Getter @Setter String voteN35;
+	private @Getter @Setter String voteN36;
+	private @Getter @Setter String voteN37;
+	private @Getter @Setter String voteN38;
+	private @Getter @Setter String voteN39;
+	private @Getter @Setter String voteN40;
+	private @Getter @Setter String voteN41;
+	private @Getter @Setter String voteN42;
+	private @Getter @Setter String voteN43;
+	private @Getter @Setter String voteN44;
+	private @Getter @Setter String voteN45;
+	private @Getter @Setter String voteN46;
+	private @Getter @Setter String voteN47;
+	private @Getter @Setter String voteN48;
+	
+	private @Getter @Setter String sabun;
+	private @Getter @Setter String saup;
+	private @Getter @Setter String dept;
+	private @Getter @Setter String pos;
+	private @Getter @Setter String kname;
+}

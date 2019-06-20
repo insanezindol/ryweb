@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.LoginMapper_Ryhr">
+	
+	<select id="selectUserInfo" parameterType="UserInfo" resultType="CustomUserDetails">
+		SELECT /* selectUserInfo */
+			A.SABUN USERNAME, 
+			A.KNAME, 
+			A.KNAME FNAME,
+			A.DEPT_CODE, 
+			B.DEPT_NAME, 
+			C.PASSWORD,
+			CASE
+		        WHEN (SELECT ITEM3 FROM RYHR.RYHCD10MT WHERE 1=1 AND GRP_CODE = 'AI' AND ITEM1 = A.SABUN) IS NOT NULL 
+		        THEN (SELECT ITEM3 FROM RYHR.RYHCD10MT WHERE 1=1 AND GRP_CODE = 'AI' AND ITEM1 = A.SABUN)
+		        ELSE 
+			        (CASE 
+			            WHEN B.DEPT_CODE IN (
+                                            SELECT
+                                                DEPT_CODE
+                                            FROM
+                                                RYHR.RYHZZ02MT
+                                            WHERE 1=1
+                                            AND STATE_GB = '1'
+                                            START WITH DEPT_CODE = '7000'
+                                            CONNECT BY PRIOR DEPT_CODE = DEPT_PARCO
+                                            ) THEN '20'
+			            WHEN B.DEPT_CODE IN (
+                                                SELECT
+                                                    DEPT_CODE
+                                                FROM
+                                                    RYHR.RYHZZ02MT
+                                                WHERE 1=1 AND STATE_GB = '1'
+                                                START WITH DEPT_CODE = '8600'
+                                                CONNECT BY PRIOR DEPT_CODE = DEPT_PARCO
+                                            ) THEN '30'
+			            WHEN B.DEPT_CODE IN ('6110','6210') THEN '40'
+			            WHEN B.DEPT_CODE IN ('6410','6420','6710') THEN '50'
+			            ELSE '10'
+			        END)
+		    END SAUPCODE,
+			D.SAUP_NM SAUPNAME,
+			A.DEPT_CODE INSADEPT, 
+			E.DEPT_NAME INSANAME, 
+			A.RETIRE_DAY,
+			A.WORK_TYPE, 
+			B.ACC_CODE, 
+			A.GRADE, 
+			A.RESPON,
+            A.POSIT_CD,
+            F.POS_LOG,
+            G.REYON_MAIL
+		FROM 
+			RYHR.RYHZZ01MT A
+            INNER JOIN RYHR.RYHZZ02MT B ON A.DEPT_CODE = B.DEPT_CODE
+            LEFT OUTER JOIN RYHR.RYHZZ03MT C ON A.SABUN = C.SABUN
+            INNER JOIN RYACC.RYAZZ03MT D ON A.SAUP_CD1||A.SAUP_CD2 = D.SAUP_CD
+            INNER JOIN RYHR.RYHZZ02MT E ON A.DEPT_CODE = E.DEPT_CODE
+            INNER JOIN RYHR.RYHAA20MT F ON A.POSIT_CD = F.POSIT_CD
+            LEFT OUTER JOIN RYHR.RYHAA01IT G ON A.SABUN = G.SABUN
+		WHERE 1=1 
+			AND A.SABUN = #{sabun}
+	        AND NVL(A.RETIRE_DAY,'99991231') <![CDATA[>=]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+	</select>
+	
+</mapper>
