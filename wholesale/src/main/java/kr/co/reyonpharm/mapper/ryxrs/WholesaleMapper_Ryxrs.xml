@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryxrs.WholesaleMapper_Ryxrs">
+	
+	<select id="loginUserInfo" parameterType="UserInfo" resultType="CustomUserDetails">
+		SELECT /* loginUserInfo */
+			USERNAME,
+			PASSWORD,
+			SAUP_NAME,
+			USER_ROLE,
+			USE_YN,
+			TO_CHAR(REG_DATE, 'YYYY-MM-DD') REG_DATE,
+			TO_CHAR(UPD_DATE, 'YYYY-MM-DD') UPD_DATE
+		FROM 
+			RYXRS.WM_USER_MAST
+		WHERE 1=1 
+			AND USERNAME = #{username}
+	        AND USE_YN = 'Y'
+	</select>
+	
+	<insert id="insertLoginHistory" parameterType="LoginHistoryInfo">
+		INSERT /* insertLoginHistory */
+		INTO WM_LOGIN_HISTORY (
+			LOGIN_SEQ,
+			SESSION_ID,
+			USERNAME,
+			IP,
+			LOGIN_DATE
+		) VALUES (
+			WM_NOTICE_SEQ.NEXTVAL,
+			#{sessionId},
+			#{username},
+			#{ip},
+			SYSDATE
+		)
+	</insert>
+	
+	<update id="updateLoginHistory" parameterType="LoginHistoryInfo">
+		UPDATE /* updateLoginHistory */
+		WM_LOGIN_HISTORY
+		SET
+			LOGOUT_DATE = SYSDATE
+		WHERE 1=1
+			AND USERNAME = #{username}
+			AND SESSION_ID = #{sessionId}
+	</update>
+	
+	<sql id="selectUserInfoListWhere">
+		<if test="username != null and username != ''">
+			AND USERNAME LIKE '%'||#{username}||'%'
+		</if>
+		<if test="saupName != null and saupName != ''">
+			AND SAUP_NAME LIKE '%'||#{saupName}||'%'
+		</if>
+		<if test="userRole != null and userRole != ''">
+			AND USER_ROLE = #{userRole}
+		</if>
+		<if test="useYn != null and useYn != ''">
+			AND USE_YN = #{useYn}
+		</if>
+	</sql>
+	
+	<select id="selectUserInfoListCount" parameterType="PageParam" resultType="Integer">
+		SELECT /* selectUserInfoListCount */
+			COUNT(1)
+	    FROM 
+			RYXRS.WM_USER_MAST
+		WHERE 1=1
+	    <include refid="selectUserInfoListWhere" />
+	</select>
+	
+	<select id="selectUserInfoList" parameterType="PageParam" resultType="UserInfo">
+		SELECT /* selectUserInfoList */
+			b.*
+		FROM (
+		  SELECT
+		    ROWNUM RNUM,
+		    a.*
+		  FROM (
+		  	SELECT
+				USERNAME,
+				PASSWORD,
+				SAUP_NAME,
+				USER_ROLE,
+				USE_YN,
+				TO_CHAR(REG_DATE, 'YYYY-MM-DD') REG_DATE,
+				TO_CHAR(UPD_DATE, 'YYYY-MM-DD') UPD_DATE
+			FROM 
+				RYXRS.WM_USER_MAST
+			WHERE 1=1 
+				<include refid="selectUserInfoListWhere" />
+			ORDER BY REG_DATE DESC
+		  ) a
+		) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	<select id="selectUsernameCheckCount" parameterType="UserInfo" resultType="Integer">
+		SELECT /* selectUsernameCheckCount */
+			COUNT(1) CNT
+		FROM
+			RYXRS.WM_USER_MAST
+		WHERE 1=1
+			AND USERNAME = #{username}
+	</select>
+	
+	<select id="selectUserInfo" parameterType="UserInfo" resultType="UserInfo">
+		SELECT /* selectUserInfo */
+			USERNAME,
+			PASSWORD,
+			SAUP_NAME,
+			USER_ROLE,
+			USE_YN,
+			TO_CHAR(REG_DATE,'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			TO_CHAR(UPD_DATE,'YYYY-MM-DD HH24:MI:SS') UPD_DATE
+		FROM 
+			RYXRS.WM_USER_MAST
+		WHERE 1=1 
+			AND USERNAME = #{username}
+	</select>
+	
+	<insert id="insertUserInfo" parameterType="UserInfo">
+		INSERT /* insertUserInfo */
+		INTO RYXRS.WM_USER_MAST (
+			USERNAME,
+			PASSWORD,
+			SAUP_NAME,
+			USER_ROLE,
+			USE_YN,
+			REG_DATE,
+			UPD_DATE
+		) VALUES (
+			#{username},
+			#{password},
+			#{saupName},
+			#{userRole},
+			#{useYn},
+			SYSDATE,
+			SYSDATE
+		)
+	</insert>
+	
+	<update id="updateUserInfo" parameterType="UserInfo">
+		UPDATE /* updateUserInfo */
+			RYXRS.WM_USER_MAST
+		SET 
+			<if test="password != null and password != ''">
+			PASSWORD = #{password}, 
+			</if>
+			SAUP_NAME = #{saupName}, 
+			USER_ROLE = #{userRole},
+			USE_YN = #{useYn}, 
+			UPD_DATE = SYSDATE
+		WHERE USERNAME = #{username}
+	</update>
+	
+	<delete id="deleteUserInfo" parameterType="UserInfo">
+		DELETE /* deleteUserInfo */
+		FROM RYXRS.WM_USER_MAST
+		WHERE USERNAME = #{username}
+	</delete>
+	
+	<update id="updateUserPwd" parameterType="UserInfo">
+		UPDATE /* updateUserPwd */
+			RYXRS.WM_USER_MAST
+		SET 
+			PASSWORD = #{password},
+			UPD_DATE = SYSDATE
+		WHERE USERNAME = #{username}
+	</update>
+	
+	<sql id="selectNoticeInfoListWhere">
+		<if test="title != null and title != ''">
+			AND UPPER(TITLE) LIKE '%'||UPPER(#{title})||'%'
+		</if>
+		<if test="contents != null and contents != ''">
+			AND UPPER(CONTENTS) LIKE '%'||UPPER(#{contents})||'%'
+		</if>
+	</sql>
+	
+	<select id="selectNoticeInfoListCount" parameterType="PageParam" resultType="Integer">
+		SELECT /* selectNoticeInfoListCount */
+			COUNT(1)
+	    FROM 
+			RYXRS.WM_NOTICE
+		WHERE 1=1
+	    <include refid="selectNoticeInfoListWhere" />
+	</select>
+	
+	<select id="selectNoticeInfoList" parameterType="PageParam" resultType="NoticeInfo">
+		SELECT /* selectNoticeInfoList */
+			b.*
+		FROM (
+		  SELECT
+		    ROWNUM RNUM,
+		    a.*
+		  FROM (
+		  	SELECT
+		  		NOTICE_SEQ,
+				TITLE,
+				CONTENTS,
+				ATTACH_FILEPATH,
+				ATTACH_FILENAME,
+				ATTACH_FILESIZE,
+				REG_USER,
+				REG_NAME,
+				TO_CHAR(REG_DATE,'YYYY-MM-DD HH24:MI') REG_DATE,
+				UPD_USER,
+				UPD_NAME,
+				TO_CHAR(UPD_DATE,'YYYY-MM-DD HH24:MI') UPD_DATE
+			FROM 
+				RYXRS.WM_NOTICE
+			WHERE 1=1 
+				<include refid="selectNoticeInfoListWhere" />
+			ORDER BY NOTICE_SEQ DESC
+		  ) a
+		) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+	
+	<select id="selectNoticeInfo" parameterType="NoticeInfo" resultType="NoticeInfo">
+		SELECT /* selectUserInfo */
+			NOTICE_SEQ,
+			TITLE,
+			CONTENTS,
+			ATTACH_FILEPATH,
+			ATTACH_FILENAME,
+			ATTACH_FILESIZE,
+			REG_USER,
+			REG_NAME,
+			TO_CHAR(REG_DATE,'YYYY-MM-DD HH24:MI:SS') REG_DATE,
+			UPD_USER,
+			UPD_NAME,
+			TO_CHAR(UPD_DATE,'YYYY-MM-DD HH24:MI:SS') UPD_DATE
+		FROM 
+			RYXRS.WM_NOTICE
+		WHERE 1=1 
+			AND NOTICE_SEQ = #{noticeSeq}
+	</select>
+	
+	<insert id="insertNoticeInfo" parameterType="NoticeInfo">
+		INSERT /* insertNoticeInfo */
+		INTO RYXRS.WM_NOTICE (
+			NOTICE_SEQ,
+			TITLE,
+			CONTENTS,
+			REG_USER,
+			REG_NAME,
+			REG_DATE,
+			UPD_USER,
+			UPD_NAME,
+			UPD_DATE
+		) VALUES (
+			WM_NOTICE_SEQ.NEXTVAL,
+			#{title},
+			#{contents},
+			#{regUser},
+			#{regName},
+			SYSDATE,
+			#{updUser},
+			#{updName},
+			SYSDATE
+		)
+		<selectKey keyProperty="currseq" resultType="long" order="AFTER">
+			SELECT WM_NOTICE_SEQ.CURRVAL FROM DUAL
+		</selectKey>
+	</insert>
+	
+	<update id="updateNoticeInfoWithFile" parameterType="NoticeInfo">
+		UPDATE /* updateNoticeInfoWithFile */
+			RYXRS.WM_NOTICE
+		SET 
+			ATTACH_FILEPATH = #{attachFilepath}, 
+			ATTACH_FILENAME = #{attachFilename}, 
+			ATTACH_FILESIZE = #{attachFilesize}
+		WHERE NOTICE_SEQ = #{noticeSeq}
+	</update>
+	
+	<update id="updateNoticeInfo" parameterType="NoticeInfo">
+		UPDATE /* updateNoticeInfo */
+			RYXRS.WM_NOTICE
+		SET 
+			TITLE = #{title}, 
+			CONTENTS = #{contents},
+			UPD_USER = #{updUser}, 
+			UPD_NAME = #{updName}, 
+			UPD_DATE = SYSDATE
+		WHERE NOTICE_SEQ = #{noticeSeq}
+	</update>
+	
+	<delete id="deleteNoticeInfo" parameterType="NoticeInfo">
+		DELETE /* deleteNoticeInfo */
+		FROM RYXRS.WM_NOTICE
+		WHERE NOTICE_SEQ = #{noticeSeq}
+	</delete>
+	
+	<sql id="selectLoginLogListWhere">
+		<if test="username != null and username != ''">
+			AND USERNAME LIKE '%'||#{username}||'%'
+		</if>
+		<if test="ip != null and ip != ''">
+			AND IP LIKE '%'||#{ip}||'%'
+		</if>
+	</sql>
+	
+	<select id="selectLoginLogListCount" parameterType="PageParam" resultType="Integer">
+		SELECT /* selectLoginLogListCount */
+			COUNT(1)
+	    FROM 
+			RYXRS.WM_LOGIN_HISTORY
+		WHERE 1=1
+	    <include refid="selectLoginLogListWhere" />
+	</select>
+	
+	<select id="selectLoginLogList" parameterType="PageParam" resultType="LoginHistoryInfo">
+		SELECT /* selectLoginLogList */
+			b.*
+		FROM (
+		  SELECT
+		    ROWNUM RNUM,
+		    a.*
+		  FROM (
+		  	SELECT
+		  		LOGIN_SEQ,
+				SESSION_ID,
+				USERNAME,
+				IP,
+				TO_CHAR(LOGIN_DATE,'YYYY-MM-DD HH24:MI:SS') LOGIN_DATE,
+				TO_CHAR(LOGOUT_DATE,'YYYY-MM-DD HH24:MI:SS') LOGOUT_DATE
+			FROM 
+				RYXRS.WM_LOGIN_HISTORY
+			WHERE 1=1 
+				<include refid="selectLoginLogListWhere" />
+			ORDER BY LOGIN_SEQ DESC
+		  ) a
+		) b
+		WHERE b.RNUM <![CDATA[>=]]> #{startRow} AND b.RNUM <![CDATA[<=]]> #{endRow}
+	</select>
+	
+</mapper>
