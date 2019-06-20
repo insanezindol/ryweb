@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans 
+	xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+	http://www.springframework.org/schema/security http://www.springframework.org/schema/security/spring-security-4.2.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-4.2.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-4.2.xsd">
+
+	<context:component-scan base-package="kr.co.reyonpharm" use-default-filters="false">
+		<context:include-filter expression="org.springframework.stereotype.Service" type="annotation" />
+		<context:include-filter expression="org.springframework.stereotype.Repository" type="annotation" />
+	</context:component-scan>
+
+	<!-- 정적인 리소스 보안 적용 패스 -->
+	<http pattern="/*.ico" security="none"/>
+	<http pattern="/plugins/**/*" security="none"/>
+	<http pattern="/css/**/*" security="none"/>
+	<http pattern="/images/**/*" security="none"/>
+	<http pattern="/js/**/*" security="none"/>
+	<http pattern="/scss/**/*" security="none"/>
+	
+	<http auto-config="true" entry-point-ref="customAuthenticationEntryPoint">
+		<!-- 비 로그인 (세션만료 된 상태에서 접근) 시 응답 처리 -->
+		<csrf disabled="true"/>
+
+		<!-- 루트 경로, /main.do로 점프처리 페이지 -->
+		<intercept-url pattern="/" access="permitAll" />
+		
+		<!-- MainController -->
+		<!-- 로그인 관련 전체 접근 가능 -->
+		<intercept-url pattern="/admin.do" access="permitAll" />
+		<intercept-url pattern="/login.do" access="permitAll" />
+		<intercept-url pattern="/logout.do" access="permitAll" />
+		<intercept-url pattern="/loginCheckAjax.json" access="permitAll" />
+		<intercept-url pattern="/concurrentSessionExceed.do" access="permitAll" />
+		
+		<intercept-url pattern="/main.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA','ROLE_USER')" />
+		
+		<!-- HRController -->
+		<intercept-url pattern="/hr/salaryView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA','ROLE_USER')" />
+		<intercept-url pattern="/hr/salaryTotalPayGbAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA','ROLE_USER')" />
+		<intercept-url pattern="/hr/salaryTotalPayDateAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA','ROLE_USER')" />
+		<intercept-url pattern="/hr/salaryViewAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA','ROLE_USER')" />
+		<intercept-url pattern="/hr/salaryExcelDownload.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA','ROLE_USER')" />
+		<intercept-url pattern="/hr/holidayList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA','ROLE_USER')" />
+		<intercept-url pattern="/hr/getHolidayYYMMAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA','ROLE_USER')" />
+		<intercept-url pattern="/hr/holidayView.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA','ROLE_USER')" />
+		<intercept-url pattern="/hr/holidayMasterList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/hr/getHolidayMasterListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/hr/holidayMasterAddAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/hr/overtimeList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA','ROLE_USER')" />		
+		<intercept-url pattern="/hr/overtimeMasterList.do" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		<intercept-url pattern="/hr/getOvertimeMasterListAjax.json" access="hasAnyRole('ROLE_ADMIN','ROLE_ITT','ROLE_INSA')" />
+		
+		<intercept-url pattern="/hr/getHolidayListAjax.json" access="permitAll" />
+		<intercept-url pattern="/hr/getHolidayMasterDetailListAjax.json" access="permitAll" />
+		<intercept-url pattern="/hr/getOvertimeInfoAjax.json" access="permitAll" />
+		<intercept-url pattern="/hr/getOvertimeListAjax.json" access="permitAll" />
+		<intercept-url pattern="/hr/getUserinfoListAjax.json" access="permitAll" />
+		
+		<!-- GWController -->
+		<intercept-url pattern="/gw/gwSalaryView.do" access="permitAll" />
+		
+		<!-- 에러페이지 전체 접근 가능 -->
+		<intercept-url pattern="/error400.do" access="permitAll" />
+		<intercept-url pattern="/error401.do" access="permitAll" />
+		<intercept-url pattern="/error403.do" access="permitAll" />
+		<intercept-url pattern="/error404.do" access="permitAll" />
+		<intercept-url pattern="/error405.do" access="permitAll" />
+		<intercept-url pattern="/error406.do" access="permitAll" />
+		<intercept-url pattern="/error408.do" access="permitAll" />
+		<intercept-url pattern="/error409.do" access="permitAll" />
+		<intercept-url pattern="/error412.do" access="permitAll" />
+		<intercept-url pattern="/error500.do" access="permitAll" />
+		<intercept-url pattern="/error501.do" access="permitAll" />
+		<intercept-url pattern="/error502.do" access="permitAll" />
+		<intercept-url pattern="/error503.do" access="permitAll" />
+
+		<!-- 명시하지 않은 나머지 페이지는 접근 가능-->
+		<intercept-url pattern="/**" access="permitAll" /> 
+
+		<form-login
+			login-page="/login.do"
+			username-parameter="userId" 
+			password-parameter="userPwd"
+			login-processing-url="/loginAjax.json"
+			default-target-url="/main.do"
+			authentication-failure-url="/login.do"
+			always-use-default-target="true"
+			authentication-success-handler-ref="customAuthenticationSuccessHandler"
+			authentication-failure-handler-ref="customAuthenticationFailureHandler"
+		/>
+	
+		<!-- 동시 접속 제한 -->
+		<session-management>
+			  <concurrency-control max-sessions="1" expired-url="/concurrentSessionExceed.do" />
+		</session-management>
+		
+		<!-- 로그아웃 -->
+		<logout
+		invalidate-session="true"
+		logout-success-url="/login.do"
+		logout-url="/logout.do" /> 
+		
+		<!-- 권한 없는 페이지 접근 시 응답 처리 -->
+		<access-denied-handler ref="accessDenied"/>
+		
+		<headers>
+			<frame-options disabled="true"></frame-options>
+		</headers>
+	</http>
+
+	<!-- 기본적인 로그인 인증 처리 -->
+	<beans:bean id="customAuthenticationProvider" class="kr.co.reyonpharm.security.CustomAuthenticationProvider" />
+	<authentication-manager alias="authenticationManager">
+		<authentication-provider ref="customAuthenticationProvider" />
+    </authentication-manager>
+
+	<!-- 로그인 성공 시 응답(Ajax 포함) 처리 -->
+	<beans:bean id="customAuthenticationSuccessHandler" class="kr.co.reyonpharm.security.CustomAuthenticationSuccessHandler" />
+     
+	<!-- 로그인 실패 시 응답(Ajax 포함) 처리-->
+	<beans:bean id="customAuthenticationFailureHandler" class="kr.co.reyonpharm.security.CustomAuthenticationFailureHandler" />
+ 
+ 	<!-- 로그인 상태에서 권한 없는 페이지 접근 시 응답(Ajax 포함) 처리 -->
+	<beans:bean id="accessDenied" class="kr.co.reyonpharm.security.CustomAccessDeniedHandler" />
+
+ 	<!-- 비 로그인(세션 만료) 상태에서 로그인이 필요한 페이지 접근 시 응답(Ajax 포함) 처리 -->
+	<beans:bean id="customAuthenticationEntryPoint" class="kr.co.reyonpharm.security.CustomAuthenticationEntryPoint" />
+	
+</beans:beans>

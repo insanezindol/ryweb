@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.gwif.SalesMapper_Gwif">
+	
+	<select id="selectSalesPerformanceInfoDateList" parameterType="SaleInfo" resultType="SaleInfo">
+		<![CDATA[
+		SELECT /* selectSalesPerformanceInfoDateList */
+			YYYYMM
+		FROM GWIF.dbo.ENAGE_SALE_SUKM
+		GROUP BY YYYYMM
+		ORDER BY YYYYMM DESC
+        ]]>
+	</select>
+	
+	<select id="selectSalesPerformanceInfoList" parameterType="SaleInfo" resultType="SaleInfo">
+		<![CDATA[
+		SELECT /* selectSalesPerformanceInfoList */
+			YYYYMM
+			,GUBUN1
+			,GIJUN_DATE
+			,DEPT_NM
+			,PMOK_AMT
+			,SALE_AMT
+			,PMOK_RATE
+			,PRE_SALE_AMT
+			,SMOK_AMT
+			,SUKM_AMT
+			,SMOK_RATE
+			,PRE_SUKM_AMT
+			,REG_DATE
+		FROM GWIF.dbo.ENAGE_SALE_SUKM
+		WHERE YYYYMM = #{yyyymm}
+		ORDER BY GUBUN1
+        ]]>
+	</select>
+	
+</mapper>

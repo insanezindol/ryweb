@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.GWMapper_Ryhr">
+	
+	<select id="selectUserInfo" parameterType="UserInfo" resultType="UserInfo">
+		SELECT /* selectUserInfo */
+		    A.SABUN,
+		    A.KNAME,
+		    B.DEPT_NAME, 
+		    C.POS_LOG
+		FROM
+		    RYHR.RYHZZ01MT A
+		    INNER JOIN RYHR.RYHZZ02MT B ON A.DEPT_CODE = B.DEPT_CODE
+		    INNER JOIN RYHR.RYHAA20MT C ON A.POSIT_CD = C.POSIT_CD
+		WHERE 1=1
+		    AND NVL(A.RETIRE_DAY,'99991231') >= TO_CHAR(SYSDATE, 'YYYYMMDD')
+		    AND A.SABUN = #{sabun}
+	</select>
+	
+</mapper>

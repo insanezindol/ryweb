@@ -1,0 +1,549 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.co.reyonpharm.mapper.ryhr.HRMapper_Ryhr">
+	
+	<select id="selectSalesCheck" parameterType="UserInfo" resultType="int">
+		SELECT /* selectSalesCheck */
+		    COUNT(1) CNT
+		FROM
+			(SELECT
+				A.DEPT_CODE,
+				A.DEPT_PARCO,
+				DECODE(B.DEPT_NAME,'이연제약','(직속)',B.DEPT_NAME) DEPT_PARCO_NAME,
+				A.DEPT_NAME,
+				A.STATE_GB
+			FROM 
+				RYHR.RYHZZ02MT A
+				LEFT OUTER JOIN RYHR.RYHZZ02MT B ON A.DEPT_PARCO = B.DEPT_CODE
+			WHERE 1=1
+				AND A.STATE_GB = '1'
+				AND A.DEPT_CODE != '0001'
+				START WITH A.DEPT_CODE IN ('4100','4400','4600')
+				CONNECT BY PRIOR A.DEPT_CODE = A.DEPT_PARCO)
+		WHERE 1=1
+			AND DEPT_CODE = #{deptCode}
+	</select>
+	
+	<select id="selectTotalPayGb" parameterType="SalaryInfo" resultType="SalaryInfo">
+		SELECT /* "selectTotalPayGb" */
+            A.SABUN,
+            A.PAY_GB
+		FROM
+			RYHR.RYHPA02IT A, RYHR.RYHZZ01MT B,	RYHR.RYHAA01IT C, RYHR.RYHZZ02MT D, RYHR.RYHAA20MT E, RYHR.RYHAH26IT F, RYHR.RYHAA01IT H
+		WHERE 1=1
+		<choose>
+			<when test="saupcode == '20'">
+			AND A.PAY_GB IN ('1','2','3','4')
+			</when>
+			<otherwise>
+			AND A.PAY_GB IN ('1','3','4')
+			</otherwise>
+		</choose>
+			AND A.SABUN LIKE '%'
+			AND A.WORK_TYPE LIKE '%'
+			AND A.SABUN = B.SABUN
+			AND A.SABUN = C.SABUN(+)
+			AND A.DEPT_CODE = D.DEPT_CODE
+			AND (NVL(B.PAY_MAIL_GB,'Y') = 'Y' OR NVL(C.REYON_MAIL||C.MAIL_ADDR1||C.MAIL_ADDR2,'N') = '')
+			AND A.POSIT_CD = E.POSIT_CD
+			AND A.YYMM = F.PAY_YYMM
+			AND F.PAY_GB = '1'
+			AND A.SABUN = H.SABUN(+)
+			AND F.DEFRAY_DATE <![CDATA[<=]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+			AND A.SABUN = #{sabun}
+        GROUP BY A.SABUN, A.PAY_GB
+		ORDER BY A.PAY_GB
+	</select>
+	
+	<select id="selectTotalPayDate" parameterType="SalaryInfo" resultType="SalaryInfo">
+		SELECT /* selectTotalPayDate */
+			A.YYMM,
+			F.DEFRAY_DATE PAY_DATE
+		FROM
+			RYHR.RYHPA02IT A, RYHR.RYHZZ01MT B,	RYHR.RYHAA01IT C, RYHR.RYHZZ02MT D, RYHR.RYHAA20MT E, RYHR.RYHAH26IT F, RYHR.RYHAA01IT H
+		WHERE 1=1
+			AND A.PAY_GB = #{payGb}
+			AND A.SABUN LIKE '%'
+			AND A.WORK_TYPE LIKE '%'
+			AND A.SABUN = B.SABUN
+			AND A.SABUN = C.SABUN(+)
+			AND A.DEPT_CODE = D.DEPT_CODE
+			AND (NVL(B.PAY_MAIL_GB,'Y') = 'Y' OR NVL(C.REYON_MAIL||C.MAIL_ADDR1||C.MAIL_ADDR2,'N') = '')
+			AND A.POSIT_CD = E.POSIT_CD
+			AND A.YYMM = F.PAY_YYMM
+			AND F.PAY_GB = '1'
+			AND A.SABUN = H.SABUN(+)
+			AND F.DEFRAY_DATE <![CDATA[<=]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+			<if test="payGb == 4">
+			AND F.DEFRAY_DATE <![CDATA[>=]]> '20171201'
+			</if>
+			AND A.SABUN = #{sabun}
+		ORDER BY A.YYMM DESC
+	</select>
+	
+	<select id="selectSalaryInfo" parameterType="SalaryInfo" resultType="SalaryInfo">
+		<![CDATA[
+		SELECT /* selectSalaryInfo */
+		    SUBSTR(A.SAUP_CD,1,1) REGION,
+		    DECODE(C.REYON_MAIL,NULL,H.MAIL_ADDR1||DECODE(H.MAIL_ADDR1,NULL,'','@')||H.MAIL_ADDR2,C.REYON_MAIL||'@reyonpharm.co.kr') MAIL,
+		    A.YYMM,
+            SUBSTR(A.YYMM,0,4) YYYY,
+            SUBSTR(A.YYMM,5,2) MM,
+		    F.DEFRAY_DATE PAY_DATE,
+		    A.SABUN SABUN,
+		    B.KNAME KNAME,
+		    A.DEPT_CODE DEPT_CODE,
+		    NVL(D.DEPT_NAME,A.DEPT_CODE||'없는부서') DEPT_NAME,
+		    E.POS_LOG GRADE,
+		    A.HOBONG HOBONG,
+		    A.PAY_TYPE PAY_TYPE,
+		    DECODE(A.WORK_TYPE,1,'사무',2,'영업',3,'생산') WORK_TYPETXT,
+		    A.PAY_RATE BONUS_RATE,
+		    NVL(OVERTIME_TIME,0)   OT_NIGHT,
+		    NVL(HOLIDAY_TIME,0)    OT_SUNDAY,
+		    TRIM(TO_CHAR(NVL(TOT_PAY_AMT,0), '999,999,999,999,999'))     PAY_TOTAL,
+		    TRIM(TO_CHAR(NVL(TOT_GONG_AMT,0), '999,999,999,999,999'))    SUB_TOTAL,
+		    TRIM(TO_CHAR(NVL(NET_PAY_AMT,0), '999,999,999,999,999'))     PAY_REMAIN,
+		    TRIM(TO_CHAR(NVL(BASIC_PAY,0), '999,999,999,999,999'))       AA01,
+		    TRIM(TO_CHAR(NVL(GRADE_PAY,0), '999,999,999,999,999'))       AA02,
+		    TRIM(TO_CHAR(NVL(BUSINESS_PAY,0), '999,999,999,999,999'))    AA03,
+		    TRIM(TO_CHAR(NVL(SETTLE_PAY,0), '999,999,999,999,999'))      AA04,
+		    TRIM(TO_CHAR(NVL(LICENSE_PAY,0), '999,999,999,999,999'))     AA05,
+		    TRIM(TO_CHAR(NVL(QUALITY_PAY,0), '999,999,999,999,999'))     AA06,
+		    TRIM(TO_CHAR(NVL(OVERTIME_PAY,0), '999,999,999,999,999'))    AA07,
+		    TRIM(TO_CHAR(NVL(HOLIDAY_PAY,0), '999,999,999,999,999'))     AA08,
+		    TRIM(TO_CHAR(NVL(PERIOD_PAY,0), '999,999,999,999,999'))      AA09,
+		    TRIM(TO_CHAR(NVL(ETC1_PAY,0), '999,999,999,999,999'))        AA10,
+		    TRIM(TO_CHAR(NVL(ETC2_PAY,0), '999,999,999,999,999'))        AA11,
+		    TRIM(TO_CHAR(NVL(EDUCATION_PAY,0), '999,999,999,999,999'))   AA12,
+		    TRIM(TO_CHAR(NVL(FOOD_PAY,0), '999,999,999,999,999'))        AA13,
+		    TRIM(TO_CHAR(NVL(ANNUITY_PAY,0), '999,999,999,999,999'))     BB01,
+		    TRIM(TO_CHAR(NVL(HEALTH_PAY,0), '999,999,999,999,999'))      BB02,
+		    TRIM(TO_CHAR(NVL(MEDICAL_PAY,0), '999,999,999,999,999'))     BB03,
+		    TRIM(TO_CHAR(NVL(UNEMPLOMENT_PAY,0), '999,999,999,999,999')) BB04,
+		    TRIM(TO_CHAR(NVL(ASSET_PAY,0), '999,999,999,999,999'))       BB05,
+		    TRIM(TO_CHAR(NVL(COMPANY_PAY,0), '999,999,999,999,999'))     BB06,
+		    TRIM(TO_CHAR(NVL(LOAN_PAY,0), '999,999,999,999,999'))        BB07,
+		    TRIM(TO_CHAR(NVL(RESERVE_PAY,0), '999,999,999,999,999'))     BB08,
+		    TRIM(TO_CHAR(NVL(ATTACHMENT_PAY,0), '999,999,999,999,999'))  BB09,
+		    TRIM(TO_CHAR(NVL(SUB1_PAY,0), '999,999,999,999,999'))        BB10,
+		    TRIM(TO_CHAR(NVL(SUB2_PAY,0), '999,999,999,999,999'))        BB11,
+		    TRIM(TO_CHAR(NVL(INCOME_TAX,0), '999,999,999,999,999'))      CC01,
+		    TRIM(TO_CHAR(NVL(INHABITANT_TAX,0), '999,999,999,999,999'))  CC02,
+		    TRIM(TO_CHAR(NVL(VILAGE_TAX,0), '999,999,999,999,999'))      CC03,
+		    TRIM(TO_CHAR(NVL(ACCOUNT_TAX,0), '999,999,999,999,999'))     CC04,
+		    DECODE(C.REYON_MAIL,'','2','1') MAIL_GBN
+		FROM
+		    RYHR.RYHPA02IT A, RYHR.RYHZZ01MT B, RYHR.RYHAA01IT C, RYHR.RYHZZ02MT D, RYHR.RYHAA20MT E, RYHR.RYHAH26IT F,  RYHR.RYHAA01IT H          
+		WHERE 1=1
+		    AND A.PAY_GB = #{payGb}
+		    AND A.SABUN = B.SABUN
+		    AND A.SABUN = C.SABUN(+)
+		    AND A.DEPT_CODE = D.DEPT_CODE
+		    AND (NVL(B.PAY_MAIL_GB,'Y') = 'Y' OR NVL(C.REYON_MAIL||C.MAIL_ADDR1||C.MAIL_ADDR2,'N') = '')
+		    AND A.POSIT_CD = E.POSIT_CD
+		    AND A.YYMM = F.PAY_YYMM
+		    AND A.SABUN = H.SABUN(+)
+		    AND F.PAY_GB = '1'
+		    AND A.SABUN = #{sabun} 
+		    AND A.YYMM = #{yymm} 
+		]]>
+	</select>
+	
+	<select id="selectHolidayYYMM" parameterType="HolidayInfo" resultType="HolidayInfo">
+		SELECT /* selectHolidayYYMM */
+		    YYMM
+		FROM
+			( SELECT DISTINCT(YYMM) YYMM FROM RYHR.RYHCH01MT WHERE 1 = 1 <if test="sabun != null and sabun != ''">AND SABUN = #{sabun}</if> )
+			UNION
+			( SELECT TO_CHAR(SYSDATE,'YYYY') YYMM FROM DUAL )
+		ORDER BY YYMM DESC
+	</select>
+	
+	<select id="selectHolidayInfo" parameterType="HolidayInfo" resultType="HolidayInfo">
+		SELECT /* selectHolidayInfo */
+		    A.SABUN,
+		    A.KNAME,
+		    B.DEPT_NAME,
+		    C.POS_LOG,
+            D.YYMM,
+            NVL(D.DAY_PLUS,0) DAY_PLUS,
+            NVL(D.DAY_MINUS,0) DAY_MINUS,
+            NVL(D.DAY_TOTAL,0) DAY_TOTAL,
+            NVL(E.USE_DAY,0) USE_DAY,
+            NVL(D.DAY_PLUS,0)-NVL(D.DAY_MINUS,0)-NVL(E.USE_DAY,0) REMAIN_DAY
+		FROM
+		    RYHR.RYHZZ01MT A 
+            INNER JOIN RYHR.RYHZZ02MT B ON A.DEPT_CODE = B.DEPT_CODE
+            INNER JOIN RYHR.RYHAA20MT C ON A.POSIT_CD = C.POSIT_CD
+            LEFT OUTER JOIN (SELECT
+                                YYMM,
+                                SABUN,
+                                SUM(CASE WHEN ADD_DAY_TYPE = '1' THEN ADD_DAY ELSE 0 END) DAY_PLUS,
+                                SUM(CASE WHEN ADD_DAY_TYPE = '2' THEN ADD_DAY ELSE 0 END) DAY_MINUS,
+                                SUM(DECODE(ADD_DAY_TYPE, 1, ADD_DAY, 2, ADD_DAY*(-1))) DAY_TOTAL
+                            FROM RYHR.RYHCH01MT
+                            WHERE 1=1 
+                            AND YYMM = #{yymm}
+                            GROUP BY YYMM, SABUN) D ON A.SABUN = D.SABUN
+            LEFT OUTER JOIN (SELECT 
+                                SABUN,
+                                SUM(MINUS_CNT) USE_DAY
+                            FROM RYHR.RYHCH01IT 
+                            WHERE 1=1 
+                            AND GW_STATUS IN ('0','1')
+                            AND (TO_CHAR(STARTDATE,'YYYY') = #{yymm} OR TO_CHAR(ENDDATE,'YYYY') = #{yymm})
+                            GROUP BY SABUN) E ON A.SABUN = E.SABUN
+		WHERE 1=1
+		    AND A.SABUN = #{sabun}
+	</select>
+	
+	<select id="selectHolidayList" parameterType="HolidayInfo" resultType="HolidayInfo">
+		SELECT /* selectHolidayList */
+		    A.HOLIDAY_SEQ,
+		    A.HOLIDAY_GBN,
+		    DECODE(A.HOLIDAY_GBN,'1','연차','2','반차(오전)','3','반차(오후)','4','특별휴가','5','생리휴가','6','장기근속휴가','7','병가','8','기타') HOLIDAY_GBN_TXT,
+		    A.SABUN,
+		    TO_CHAR(A.STARTDATE, 'YYYY-MM-DD') STARTDATE,
+		    TO_CHAR(A.ENDDATE, 'YYYY-MM-DD') ENDDATE,
+		    A.MINUS_CNT,
+		    A.VIEW_MINUS_CNT,
+		    A.REASON,
+		    A.TAKEOVER,
+		    A.STATUS,
+		    A.REG_SABUN,
+		    TO_CHAR(A.REG_DATE, 'YYYY-MM-DD HH24:MI') REG_DATE,
+		    A.UPD_SABUN,
+		    TO_CHAR(A.UPD_DATE, 'YYYY-MM-DD HH24:MI') UPD_DATE,
+		    TO_CHAR(A.GW_REG_DATE, 'YYYY-MM-DD HH24:MI') GW_REG_DATE,
+		    TO_CHAR(A.GW_UPD_DATE, 'YYYY-MM-DD HH24:MI') GW_UPD_DATE,
+		    A.GW_STATUS,
+		    DECODE(A.GW_STATUS,'-1','반려','0','진행중','1','승인','2','미제출','3','기안취소') GW_STATUS_TXT,
+		    B.KNAME,
+		    C.DEPT_NAME,
+            CASE
+				WHEN A.HOLIDAY_GBN IN ('1','2','3','4','6','8') AND A.GW_STATUS IN ('0','1') THEN 'O' 
+				-- HOLIDAY_GBN : 연차, 반차(오전), 반차(오후), 특별휴가, 장기근속휴가, 기타
+				-- GW_STATUS : 진행중, 승인, 미제출
+                ELSE 'X'
+			END MINUS_YN
+		FROM
+		    RYHR.RYHCH01IT A
+		    INNER JOIN RYHR.RYHZZ01MT B ON A.SABUN = B.SABUN
+		    INNER JOIN RYHR.RYHZZ02MT C ON B.DEPT_CODE = C.DEPT_CODE
+		WHERE 1=1
+		    AND A.SABUN = #{sabun}
+		    AND (TO_CHAR(A.STARTDATE,'YYYY') = #{yymm} OR TO_CHAR(A.ENDDATE,'YYYY') = #{yymm})
+		    ORDER BY A.STARTDATE DESC, A.ENDDATE DESC
+	</select>
+	
+	<select id="selectHolidayMasterList" parameterType="HolidayInfo" resultType="HolidayInfo">
+		SELECT /* selectHolidayMasterList */
+		    A.DEPT_CODE, 
+			B.DEPT_NAME, 
+			A.SABUN, 
+			A.KNAME, 
+			C.POS_LOG,
+		    NVL(D.DAY_PLUS, 0) DAY_PLUS,
+		    NVL(D.DAY_MINUS, 0) DAY_MINUS,
+		    NVL(D.DAY_PLUS, 0)-NVL(D.DAY_MINUS, 0) DAY_TOTAL
+		FROM 
+		    RYHR.RYHZZ01MT A
+		    INNER JOIN RYHR.RYHZZ02MT B ON A.DEPT_CODE = B.DEPT_CODE
+		    INNER JOIN RYHR.RYHAA20MT C ON A.POSIT_CD = C.POSIT_CD
+		    LEFT OUTER JOIN (SELECT 
+		                        SABUN, SUM(DAY_PLUS) DAY_PLUS, SUM(DAY_MINUS) DAY_MINUS
+		                    FROM
+		                        (SELECT SABUN, SUM(ADD_DAY) DAY_PLUS, 0 DAY_MINUS FROM RYHR.RYHCH01MT WHERE YYMM = #{yymm} AND ADD_DAY_TYPE = '1' GROUP BY SABUN
+		                        UNION ALL
+		                        SELECT SABUN, 0 DAY_PLUS, SUM(ADD_DAY) DAY_MINUS FROM RYHR.RYHCH01MT WHERE YYMM = #{yymm} AND ADD_DAY_TYPE = '2' GROUP BY SABUN)
+		                    GROUP BY SABUN) D ON A.SABUN = D.SABUN
+		WHERE 1=1
+			AND A.ENTER_DAY <![CDATA[<=]]> #{yymm}||'1231' 
+			AND NVL(A.RETIRE_DAY,#{yymm}||'1231') <![CDATA[>=]]> #{yymm}||'0101' 
+			AND NVL(A.RETIRE_DAY,#{yymm}||'1231') <![CDATA[<=]]> #{yymm}||'1231' 
+			<if test="deptName != null and deptName != ''">
+				AND B.DEPT_NAME = #{deptName}
+			</if>
+			<if test="kname != null and kname != ''">
+				AND A.KNAME LIKE '%'||#{kname}||'%'
+			</if>
+		ORDER BY B.INNER_CD, A.POSIT_CD
+	</select>
+	
+	<insert id="insertHolidayMaster" parameterType="HolidayInfo">
+		INSERT /* insertHolidayMaster */
+		INTO RYHR.RYHCH01MT (
+			SEQ,
+			YYMM,
+			SABUN,
+			ADD_DAY,
+			ADD_DAY_TYPE,
+			ADD_DAY_COMMENT,
+			STATUS,
+			REG_SABUN,
+			REG_DATE
+		) VALUES (
+			SEQ_RYHCH01MT.NEXTVAL,
+			#{yymm},
+			#{sabun},
+			#{addDay},
+			#{addDayType},
+			#{addDayComment},
+			#{status},
+			#{regSabun},
+			SYSDATE
+		)
+	</insert>
+	
+	<select id="selectHolidayMasterDetailList" parameterType="HolidayInfo" resultType="HolidayInfo">
+		SELECT /* selectHolidayMasterDetailList */
+		    A.SEQ,
+		    A.YYMM,
+		    A.SABUN,
+		    A.ADD_DAY,
+		    A.ADD_DAY_TYPE,
+		    DECODE(A.ADD_DAY_TYPE, 1, '증가', 2, '차감') ADD_DAY_TYPE_TXT,
+		    A.ADD_DAY_COMMENT,
+		    A.STATUS,
+		    A.REG_SABUN,
+		    B.KNAME REG_KNAME,
+		    TO_CHAR(A.REG_DATE, 'YYYY-MM-DD HH24:MI') REG_DATE
+		FROM
+		    RYHR.RYHCH01MT A
+		    INNER JOIN RYHR.RYHZZ01MT B ON A.REG_SABUN = B.SABUN
+		WHERE 1=1
+			AND A.SABUN = #{sabun}
+			AND A.YYMM = #{yymm}
+		ORDER BY A.REG_DATE DESC
+	</select>
+	
+	<insert id="insertMIS003" parameterType="HolidayInfo">
+		INSERT /* insertMIS003 */
+		INTO RYHR.RYHCH01IT (
+			HOLIDAY_SEQ,
+			HOLIDAY_GBN,
+			SABUN,
+			STARTDATE,
+			ENDDATE,
+			MINUS_CNT,
+			VIEW_MINUS_CNT,
+			REASON,
+			TAKEOVER,
+			STATUS,
+			REG_SABUN,
+			REG_DATE,
+			UPD_SABUN,
+			UPD_DATE,
+			GW_REG_DATE,
+			GW_UPD_DATE,
+			GW_STATUS
+		) VALUES (
+			SEQ_RYHCH01IT.NEXTVAL,
+			#{holidayGbn},
+			#{sabun},
+			TO_DATE(#{startdate},'YYYY-MM-DD'),
+			TO_DATE(#{enddate},'YYYY-MM-DD'),
+			#{holidayTotalCnt},
+			#{viewMinusCnt},
+			#{reason},
+			#{takeover},
+			#{status},
+			#{sabun},
+			SYSDATE,
+			#{sabun},
+			SYSDATE,
+			SYSDATE,
+			SYSDATE,
+			#{gwStatus}
+		)
+		<selectKey keyProperty="currseq" resultType="long" order="AFTER">
+			SELECT SEQ_RYHCH01IT.CURRVAL FROM DUAL
+		</selectKey>
+	</insert>
+	
+	<select id="selectOvertimeInfo" parameterType="OvertimeInfo" resultType="OvertimeInfo">
+		SELECT /* selectOvertimeInfo */
+		    A.SABUN,
+		    A.KNAME,
+		    B.DEPT_NAME,
+		    C.POS_LOG,
+            NVL(D.WORKING_MINUTE,0) WORKING_MINUTE,
+            720-NVL(D.WORKING_MINUTE,0) REMAIN_MINUTE
+		FROM
+		    RYHR.RYHZZ01MT A 
+            INNER JOIN RYHR.RYHZZ02MT B ON A.DEPT_CODE = B.DEPT_CODE
+            INNER JOIN RYHR.RYHAA20MT C ON A.POSIT_CD = C.POSIT_CD
+            LEFT OUTER JOIN (SELECT
+							    T2.SABUN SABUN,
+							    SUM(T1.WORKING_MINUTE) WORKING_MINUTE
+							FROM
+							    RYHR.RYHCH02IT T1
+							    INNER JOIN RYHR.RYHCH03IT T2 ON T1.OVERTIME_SEQ = T2.OVERTIME_SEQ
+							WHERE 1=1
+							    AND T2.SABUN = #{sabun}
+							    AND T1.GW_STATUS IN ('0','1')
+							    AND T1.STARTDATE <![CDATA[>=]]> TO_DATE(#{yymmdd},'YYYYMMDD')-((SELECT TO_CHAR(TO_DATE(#{yymmdd},'YYYYMMDD'),'D') FROM DUAL) -2 )
+							    AND T1.STARTDATE <![CDATA[<=]]> TO_DATE(#{yymmdd},'YYYYMMDD')-((SELECT TO_CHAR(TO_DATE(#{yymmdd},'YYYYMMDD'),'D') FROM DUAL) -2 )+6
+							GROUP BY T2.SABUN) D ON A.SABUN = D.SABUN
+		WHERE 1=1
+		    AND A.SABUN = #{sabun}
+	</select>
+	
+	<select id="selectOvertimeList" parameterType="OvertimeInfo" resultType="OvertimeInfo">
+		SELECT /* selectOvertimeList */
+		    A.OVERTIME_SEQ,
+		    A.OVERTIME_GBN,
+		    DECODE(A.OVERTIME_GBN,'1','연장근로','2','휴일근로','3','야간근로') OVERTIME_GBN_TXT,
+		    B.SABUN,
+		    TO_CHAR(A.STARTDATE, 'YYYY-MM-DD HH24:MI') STARTDATE,
+		    TO_CHAR(A.ENDDATE, 'YYYY-MM-DD HH24:MI') ENDDATE,
+		    TO_CHAR(A.REST_STARTTIME1, 'YYYY-MM-DD HH24:MI') REST_STARTTIME1,
+		    TO_CHAR(A.REST_ENDTIME1, 'YYYY-MM-DD HH24:MI') REST_ENDTIME1,
+		    TO_CHAR(A.REST_STARTTIME2, 'YYYY-MM-DD HH24:MI') REST_STARTTIME2,
+		    TO_CHAR(A.REST_ENDTIME2, 'YYYY-MM-DD HH24:MI') REST_ENDTIME2,
+		    TO_CHAR(A.REST_STARTTIME3, 'YYYY-MM-DD HH24:MI') REST_STARTTIME3,
+		    TO_CHAR(A.REST_ENDTIME3, 'YYYY-MM-DD HH24:MI') REST_ENDTIME3,
+		    A.WORKING_MINUTE,
+		    A.REASON,
+		    A.EVIDENCE,
+		    A.STATUS,
+		    A.REG_SABUN,
+		    TO_CHAR(A.REG_DATE, 'YYYY-MM-DD HH24:MI') REG_DATE,
+		    A.UPD_SABUN,
+		    TO_CHAR(A.UPD_DATE, 'YYYY-MM-DD HH24:MI') UPD_DATE,
+		    TO_CHAR(A.GW_REG_DATE, 'YYYY-MM-DD HH24:MI') GW_REG_DATE,
+		    TO_CHAR(A.GW_UPD_DATE, 'YYYY-MM-DD HH24:MI') GW_UPD_DATE,
+		    A.GW_STATUS,
+		    DECODE(A.GW_STATUS,'-1','반려','0','진행중','1','승인','2','미제출','3','기안취소') GW_STATUS_TXT,
+		    C.KNAME,
+		    D.DEPT_NAME
+		FROM
+		    RYHR.RYHCH02IT A
+            INNER JOIN RYHR.RYHCH03IT B ON A.OVERTIME_SEQ = B.OVERTIME_SEQ
+		    INNER JOIN RYHR.RYHZZ01MT C ON B.SABUN = C.SABUN
+		    INNER JOIN RYHR.RYHZZ02MT D ON C.DEPT_CODE = D.DEPT_CODE
+		WHERE 1=1
+		    AND B.SABUN = #{sabun}
+		    AND STARTDATE <![CDATA[>=]]> TO_DATE(#{yymmdd},'YYYYMMDD')-((SELECT TO_CHAR(TO_DATE(#{yymmdd},'YYYYMMDD'),'D') FROM DUAL) -2 )
+		    AND STARTDATE <![CDATA[<=]]> TO_DATE(#{yymmdd},'YYYYMMDD')-((SELECT TO_CHAR(TO_DATE(#{yymmdd},'YYYYMMDD'),'D') FROM DUAL) -2 )+6
+		ORDER BY A.STARTDATE DESC, A.ENDDATE DESC
+	</select>
+	
+	<select id="selectUserinfoList" parameterType="OvertimeInfo" resultType="OvertimeInfo">
+		SELECT /* selectUserinfoList */
+			B.DEPT_NAME, 
+			A.SABUN, 
+			A.KNAME, 
+			C.POS_LOG
+		FROM 
+		    RYHR.RYHZZ01MT A
+		    INNER JOIN RYHR.RYHZZ02MT B ON A.DEPT_CODE = B.DEPT_CODE
+		    INNER JOIN RYHR.RYHAA20MT C ON A.POSIT_CD = C.POSIT_CD
+		WHERE 1=1 
+			AND NVL(A.RETIRE_DAY,'99991231') <![CDATA[>=]]> TO_CHAR(SYSDATE, 'YYYYMMDD')
+		ORDER BY B.INNER_CD, A.POSIT_CD
+	</select>
+	
+	<insert id="insertMIS004" parameterType="OvertimeInfo">
+		INSERT /* insertMIS004 */
+		INTO RYHR.RYHCH02IT (
+			OVERTIME_SEQ,
+			OVERTIME_GBN,
+			STARTDATE,
+			ENDDATE,
+			REST_STARTTIME1,
+			REST_ENDTIME1,
+			REST_STARTTIME2,
+			REST_ENDTIME2,
+			REST_STARTTIME3,
+			REST_ENDTIME3,
+			WORKING_MINUTE,
+			REASON,
+			EVIDENCE,
+			STATUS,
+			REG_SABUN,
+			REG_DATE,
+			UPD_SABUN,
+			UPD_DATE,
+			GW_REG_DATE,
+			GW_UPD_DATE,
+			GW_STATUS
+		) VALUES (
+			SEQ_RYHCH02IT.NEXTVAL,
+			#{overtimeGbn},
+			TO_DATE(#{startdate},'YYYY-MM-DD HH24:MI'),
+			TO_DATE(#{enddate},'YYYY-MM-DD HH24:MI'),
+			TO_DATE(#{restStarttime1},'YYYY-MM-DD HH24:MI'),
+			TO_DATE(#{restEndtime1},'YYYY-MM-DD HH24:MI'),
+			TO_DATE(#{restStarttime2},'YYYY-MM-DD HH24:MI'),
+			TO_DATE(#{restEndtime2},'YYYY-MM-DD HH24:MI'),
+			TO_DATE(#{restStarttime3},'YYYY-MM-DD HH24:MI'),
+			TO_DATE(#{restEndtime3},'YYYY-MM-DD HH24:MI'),
+			#{workingMinute},
+			#{reason},
+			#{evidence},
+			#{status},
+			#{regSabun},
+			SYSDATE,
+			#{updSabun},
+			SYSDATE,
+			SYSDATE,
+			SYSDATE,
+			#{gwStatus}
+		)
+		<selectKey keyProperty="currseq" resultType="long" order="AFTER">
+			SELECT SEQ_RYHCH02IT.CURRVAL FROM DUAL
+		</selectKey>
+	</insert>
+	
+	<insert id="insertMIS004Worker" parameterType="OvertimeInfo">
+		INSERT /* insertMIS004Worker */
+		INTO RYHR.RYHCH03IT (
+			OVERTIME_SEQ,
+			SABUN,
+			ORDER_SEQ
+		) VALUES (
+			#{overtimeSeq},
+			#{sabun},
+			#{orderSeq}
+		)
+	</insert>
+	
+	<select id="selectOvertimeMasterList" parameterType="OvertimeInfo" resultType="OvertimeInfo">
+		SELECT /* selectOvertimeMasterList */
+		    A.SABUN,
+		    A.KNAME,
+		    B.DEPT_NAME,
+		    C.POS_LOG,
+            NVL(D.WORKING_MINUTE,0) WORKING_MINUTE,
+            720-NVL(D.WORKING_MINUTE,0) REMAIN_MINUTE
+		FROM
+		    RYHR.RYHZZ01MT A 
+            INNER JOIN RYHR.RYHZZ02MT B ON A.DEPT_CODE = B.DEPT_CODE
+            INNER JOIN RYHR.RYHAA20MT C ON A.POSIT_CD = C.POSIT_CD
+            LEFT OUTER JOIN (SELECT
+							    T2.SABUN SABUN,
+							    SUM(T1.WORKING_MINUTE) WORKING_MINUTE
+							FROM
+							    RYHR.RYHCH02IT T1
+							    INNER JOIN RYHR.RYHCH03IT T2 ON T1.OVERTIME_SEQ = T2.OVERTIME_SEQ
+							WHERE 1=1
+							    AND T1.GW_STATUS IN ('0','1')
+							    AND T1.STARTDATE <![CDATA[>=]]> TO_DATE(#{yymmdd},'YYYYMMDD')-((SELECT TO_CHAR(TO_DATE(#{yymmdd},'YYYYMMDD'),'D') FROM DUAL) -2 )
+							    AND T1.STARTDATE <![CDATA[<=]]> TO_DATE(#{yymmdd},'YYYYMMDD')-((SELECT TO_CHAR(TO_DATE(#{yymmdd},'YYYYMMDD'),'D') FROM DUAL) -2 )+6
+							GROUP BY T2.SABUN) D ON A.SABUN = D.SABUN
+		WHERE 1=1
+			AND A.ENTER_DAY <![CDATA[<=]]> SUBSTR(#{yymmdd},0,4)||'1231' 
+			AND NVL(A.RETIRE_DAY,SUBSTR(#{yymmdd},0,4)||'1231') <![CDATA[>=]]> SUBSTR(#{yymmdd},0,4)||'0101' 
+			AND NVL(A.RETIRE_DAY,SUBSTR(#{yymmdd},0,4)||'1231') <![CDATA[<=]]> SUBSTR(#{yymmdd},0,4)||'1231'
+	    <if test="deptName != null and deptName != ''">
+			AND B.DEPT_NAME = #{deptName}
+		</if>
+		<if test="kname != null and kname != ''">
+			AND A.KNAME LIKE '%'||#{kname}||'%'
+		</if>
+		ORDER BY B.INNER_CD, A.POSIT_CD
+	</select>
+	
+</mapper>
